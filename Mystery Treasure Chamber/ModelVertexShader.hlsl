@@ -13,7 +13,7 @@ cbuffer ChangesOnResizeConstantBuffer : register(b1)
 	float2 padding;
 }
 
-cbuffer ConstantBuffer : register(b2)
+cbuffer TimeBuffer : register(b2)
 {
 	float time;
 	float3 padding2;

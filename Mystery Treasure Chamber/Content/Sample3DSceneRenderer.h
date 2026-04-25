@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "..\Common\DeviceResources.h"
+#include "Common\DeviceResources.h"
 #include "ShaderStructures.h"
-#include "..\Common\StepTimer.h"
+#include "Common\StepTimer.h"
 
 namespace Mystery_Treasure_Chamber
 {
@@ -79,9 +79,9 @@ namespace Mystery_Treasure_Chamber
 		ModelViewProjectionConstantBuffer	m_constantBufferData;
 		PixelShaderConstantBuffer			m_psConstantBufferData;
 		ChangesOnResizeConstantBuffer		m_changesOnResizeConstantBufferData;
-		uint32	m_indexCount;
-		uint32	m_vertexCount;
-		uint32 m_maxParticles;
+		uint32_t	m_indexCount;
+		uint32_t	m_vertexCount;
+		uint32_t m_maxParticles;
 
 		// Variables used with the rendering loop.
 		bool	m_loadingComplete;

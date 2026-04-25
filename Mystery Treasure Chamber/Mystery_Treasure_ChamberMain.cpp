@@ -3,9 +3,6 @@
 #include "Common\DirectXHelper.h"
 
 using namespace Mystery_Treasure_Chamber;
-using namespace Windows::Foundation;
-using namespace Windows::System::Threading;
-using namespace Concurrency;
 
 // Loads and initializes application assets when the application is loaded.
 Mystery_Treasure_ChamberMain::Mystery_Treasure_ChamberMain(const std::shared_ptr<DX::DeviceResources>& deviceResources) :
@@ -73,7 +70,9 @@ bool Mystery_Treasure_ChamberMain::Render()
 	context->OMSetRenderTargets(1, targets, m_deviceResources->GetDepthStencilView());
 
 	// Clear the back buffer and depth stencil view.
-	context->ClearRenderTargetView(m_deviceResources->GetBackBufferRenderTargetView(), DirectX::Colors::CornflowerBlue);
+	// Clears the screen to pitch black
+	const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	context->ClearRenderTargetView(m_deviceResources->GetBackBufferRenderTargetView(), clearColor);
 	context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	// Render the scene objects.

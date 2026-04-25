@@ -1,175 +1,204 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Common">
-      <UniqueIdentifier>80dbdc0e-1651-4b8b-b61c-9f4c6a1c3a52</UniqueIdentifier>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Assets">
-      <UniqueIdentifier>c1fc9d42-4599-4a8c-a4b2-e746b0559211</UniqueIdentifier>
-      <Extensions>bmp;fbx;gif;jpg;jpeg;tga;tiff;tif;png</Extensions>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
     </Filter>
-    <Filter Include="Content">
-      <UniqueIdentifier>f06d4847-4837-402d-a937-5d17e9d917ee</UniqueIdentifier>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <ClInclude Include="Common\DirectXHelper.h">
-      <Filter>Common</Filter>
+    <Filter Include="Header Files\Common">
+      <UniqueIdentifier>{55e35598-afdb-40a2-9307-b133481fdcbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{cdc6a3c0-ea5a-4e49-83e8-612d9e83f2e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Content">
+      <UniqueIdentifier>{3cd7e1c5-81e1-4d72-ac9f-1e69881ea884}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Content">
+      <UniqueIdentifier>{c610f249-302f-42e1-b0e9-6e9f43d8357b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Content">
+      <UniqueIdentifier>{27b4fcf7-9189-4baa-90ee-3e1c9b7227d3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Common\StepTimer.h">
-      <Filter>Common</Filter>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mystery Treasure Chamber.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mystery_Treasure_ChamberMain.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Common\DeviceResources.h">
-      <Filter>Common</Filter>
+      <Filter>Header Files\Common</Filter>
     </ClInclude>
-    <ClCompile Include="Common\DeviceResources.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
+    <ClInclude Include="pch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\StepTimer.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\DirectXHelper.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
     <ClInclude Include="Content\Sample3DSceneRenderer.h">
-      <Filter>Content</Filter>
+      <Filter>Header Files\Content</Filter>
     </ClInclude>
     <ClInclude Include="Content\SampleFpsTextRenderer.h">
-      <Filter>Content</Filter>
+      <Filter>Header Files\Content</Filter>
     </ClInclude>
     <ClInclude Include="Content\ShaderStructures.h">
-      <Filter>Content</Filter>
+      <Filter>Header Files\Content</Filter>
     </ClInclude>
-    <ClCompile Include="Content\Sample3DSceneRenderer.cpp">
-      <Filter>Content</Filter>
+    <ClInclude Include="Common\DDSTextureLoader.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Mystery Treasure Chamber.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mystery_Treasure_ChamberMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\DeviceResources.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
     <ClCompile Include="Content\SampleFpsTextRenderer.cpp">
-      <Filter>Content</Filter>
+      <Filter>Source Files\Content</Filter>
     </ClCompile>
-    <FxCompile Include="Content\SampleVertexShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <Image Include="Assets\LockScreenLogo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\SplashScreen.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Square150x150Logo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Square44x44Logo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\Wide310x150Logo.scale-200.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Filter Include="Assets\Textures">
-      <UniqueIdentifier>{9574f0f7-d49d-4b51-9c81-70fe457acea8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Assets\Models">
-      <UniqueIdentifier>{21fe62cc-c127-4a8f-9ca1-198adfe0dbdc}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="App.cpp" />
-    <ClCompile Include="Mystery_Treasure_ChamberMain.cpp" />
-    <ClCompile Include="pch.cpp" />
-    <ClCompile Include="DDSTextureLoader.cpp">
-      <Filter>Common</Filter>
+    <ClCompile Include="Content\Sample3DSceneRenderer.cpp">
+      <Filter>Source Files\Content</Filter>
+    </ClCompile>
+    <ClCompile Include="Common\DDSTextureLoader.cpp">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="App.h" />
-    <ClInclude Include="Mystery_Treasure_ChamberMain.h" />
-    <ClInclude Include="pch.h" />
-    <ClInclude Include="DDSTextureLoader.h">
-      <Filter>Common</Filter>
-    </ClInclude>
+    <ResourceCompile Include="Mystery Treasure Chamber.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\StoreLogo.png">
-      <Filter>Assets</Filter>
+    <Image Include="small.ico">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\Scales.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Mystery Treasure Chamber.ico">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\StoneWall_1024_albedo.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\Stone_Wall_002_COLOR.DDS" />
+    <Image Include="Assets\Textures\StoneWall_1024_roughness.tif">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\StoneWall_1024_height.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\fire.DDS" />
+    <Image Include="Assets\Textures\fire.jpg">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\StoneWall_1024_normal.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\noise.DDS" />
+    <Image Include="Assets\Textures\noise.jpg">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\StoneWall_1024_roughness.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\noise.png">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\Scales2.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\Scales.DDS" />
+    <Image Include="Assets\Textures\Scales.jpg">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\fire.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\Scales2.DDS" />
+    <Image Include="Assets\Textures\Scales2.jpg">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\noise.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\Stone_Wall_002_COLOR.png">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\Stone_Wall_002_COLOR.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\Stone_Wall_002_DISP.DDS" />
+    <Image Include="Assets\Textures\Stone_Wall_002_DISP.png">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\Stone_Wall_002_DISP.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\Stone_Wall_002_NRM.DDS" />
+    <Image Include="Assets\Textures\Stone_Wall_002_NRM.png">
+      <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\Textures\Stone_Wall_002_NRM.DDS">
-      <Filter>Assets\Textures</Filter>
+    <Image Include="Assets\Textures\StoneWall_1024_albedo.DDS" />
+    <Image Include="Assets\Textures\StoneWall_1024_albedo.tif">
+      <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="Assets\Textures\StoneWall_1024_ao.tif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\Textures\StoneWall_1024_height.DDS" />
+    <Image Include="Assets\Textures\StoneWall_1024_height.tif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\Textures\StoneWall_1024_normal.DDS" />
+    <Image Include="Assets\Textures\StoneWall_1024_normal.tif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\Textures\StoneWall_1024_roughness.DDS" />
   </ItemGroup>
   <ItemGroup>
-    <AppxManifest Include="Package.appxmanifest" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Mystery Treasure Chamber_TemporaryKey.pfx" />
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="ModelVertexShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="GeometryShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="ParticlePixelShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="HullShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="VertexShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
     <FxCompile Include="DomainShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="Content\RoomPixelShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="PillarPixelShader.hlsl">
-      <Filter>Content</Filter>
+      <Filter>Resource Files</Filter>
     </FxCompile>
     <FxCompile Include="FloorPixelShader.hlsl">
-      <Filter>Content</Filter>
+      <Filter>Resource Files</Filter>
     </FxCompile>
-    <FxCompile Include="ModelPixelShader.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="ParticleVertexShaderSO.hlsl">
-      <Filter>Content</Filter>
-    </FxCompile>
-    <FxCompile Include="ParticleVertexShader.hlsl">
-      <Filter>Content</Filter>
+    <FxCompile Include="GeometryShader.hlsl">
+      <Filter>Resource Files</Filter>
     </FxCompile>
     <FxCompile Include="GeometryShaderSO.hlsl">
-      <Filter>Content</Filter>
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="HullShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ModelPixelShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ModelVertexShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ParticlePixelShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ParticleVertexShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="ParticleVertexShaderSO.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="PillarPixelShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="Content\RoomPixelShader.hlsl">
+      <Filter>Resource Files\Content</Filter>
+    </FxCompile>
+    <FxCompile Include="Content\SampleVertexShader.hlsl">
+      <Filter>Resource Files\Content</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Assets\Models\Snake.txt">
-      <Filter>Assets\Models</Filter>
-    </Text>
+    <Text Include="Assets\Models\Snake.txt" />
+    <Text Include="Assets\Models\Snek.txt" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,13 @@
 ﻿#pragma once
 
+#include <Windows.h>
+#include <d3d11_3.h>
+#include <dxgi1_4.h>
+#include <d2d1_3.h>
+#include <dwrite_3.h>
+#include <wincodec.h>
+#include <wrl/client.h>
+
 namespace DX
 {
 	// Provides an interface for an application that owns DeviceResources to be notified of the device being lost or created.
@@ -14,9 +22,10 @@ namespace DX
 	{
 	public:
 		DeviceResources();
-		void SetWindow(Windows::UI::Core::CoreWindow^ window);
-		void SetLogicalSize(Windows::Foundation::Size logicalSize);
-		void SetCurrentOrientation(Windows::Graphics::Display::DisplayOrientations currentOrientation);
+		~DeviceResources();
+		void SetWindow(HWND window, int width, int height);
+		void WindowSizeChanged(int width, int height);
+		
 		void SetDpi(float dpi);
 		void ValidateDevice();
 		void HandleDeviceLost();
@@ -25,11 +34,13 @@ namespace DX
 		void Present();
 
 		// The size of the render target, in pixels.
-		Windows::Foundation::Size	GetOutputSize() const					{ return m_outputSize; }
+		UINT GetOutputWidth() const { return m_outputWidth; }
+		UINT GetOutputHeight() const { return m_outputHeight; }
 
 		// The size of the render target, in dips.
-		Windows::Foundation::Size	GetLogicalSize() const					{ return m_logicalSize; }
-		float						GetDpi() const							{ return m_effectiveDpi; }
+		float GetLogicalWidth() const { return m_logicalWidth; }
+		float GetLogicalHeight() const { return m_logicalHeight; }
+		float GetDpi() const { return m_effectiveDpi; }
 
 		// D3D Accessors.
 		ID3D11Device3*				GetD3DDevice() const					{ return m_d3dDevice.Get(); }
@@ -39,7 +50,6 @@ namespace DX
 		ID3D11RenderTargetView1*	GetBackBufferRenderTargetView() const	{ return m_d3dRenderTargetView.Get(); }
 		ID3D11DepthStencilView*		GetDepthStencilView() const				{ return m_d3dDepthStencilView.Get(); }
 		D3D11_VIEWPORT				GetScreenViewport() const				{ return m_screenViewport; }
-		DirectX::XMFLOAT4X4			GetOrientationTransform3D() const		{ return m_orientationTransform3D; }
 
 		// D2D Accessors.
 		ID2D1Factory3*				GetD2DFactory() const					{ return m_d2dFactory.Get(); }
@@ -48,14 +58,12 @@ namespace DX
 		ID2D1Bitmap1*				GetD2DTargetBitmap() const				{ return m_d2dTargetBitmap.Get(); }
 		IDWriteFactory3*			GetDWriteFactory() const				{ return m_dwriteFactory.Get(); }
 		IWICImagingFactory2*		GetWicImagingFactory() const			{ return m_wicFactory.Get(); }
-		D2D1::Matrix3x2F			GetOrientationTransform2D() const		{ return m_orientationTransform2D; }
 
 	private:
 		void CreateDeviceIndependentResources();
 		void CreateDeviceResources();
 		void CreateWindowSizeDependentResources();
 		void UpdateRenderTargetSize();
-		DXGI_MODE_ROTATION ComputeDisplayRotation();
 
 		// Direct3D objects.
 		Microsoft::WRL::ComPtr<ID3D11Device3>			m_d3dDevice;
@@ -77,24 +85,19 @@ namespace DX
 		Microsoft::WRL::ComPtr<IDWriteFactory3>		m_dwriteFactory;
 		Microsoft::WRL::ComPtr<IWICImagingFactory2>	m_wicFactory;
 
-		// Cached reference to the Window.
-		Platform::Agile<Windows::UI::Core::CoreWindow> m_window;
+		// Standard Win32 Window Handle
+		HWND m_window;
 
 		// Cached device properties.
 		D3D_FEATURE_LEVEL								m_d3dFeatureLevel;
-		Windows::Foundation::Size						m_d3dRenderTargetSize;
-		Windows::Foundation::Size						m_outputSize;
-		Windows::Foundation::Size						m_logicalSize;
-		Windows::Graphics::Display::DisplayOrientations	m_nativeOrientation;
-		Windows::Graphics::Display::DisplayOrientations	m_currentOrientation;
+		UINT					m_outputWidth;
+		UINT m_outputHeight;
+		float m_logicalWidth;
+		float m_logicalHeight;
 		float											m_dpi;
 
 		// This is the DPI that will be reported back to the app. It takes into account whether the app supports high resolution screens or not.
 		float m_effectiveDpi;
-
-		// Transforms used for display orientation.
-		D2D1::Matrix3x2F	m_orientationTransform2D;
-		DirectX::XMFLOAT4X4	m_orientationTransform3D;
 
 		// The IDeviceNotify can be held directly as it owns the DeviceResources.
 		IDeviceNotify* m_deviceNotify;

@@ -1,36 +1,55 @@
 ﻿#pragma once
 
-#include <ppltasks.h>	// For create_task
+#include <stdexcept>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <stdint.h>
 
 namespace DX
 {
+	class com_exception : public std::exception
+	{
+	private:
+		HRESULT result;
+	public:
+		com_exception(HRESULT hr) : result(hr) {}
+		virtual const char* what() const override
+		{
+			static char s_str[64] = {};
+			sprintf_s(s_str, "Failure with HRESULT of %08X", static_cast<unsigned int>(result));
+			return s_str;
+		}
+		HRESULT get_result() const { return result; }
+	};
+
 	inline void ThrowIfFailed(HRESULT hr)
 	{
 		if (FAILED(hr))
 		{
 			// Set a breakpoint on this line to catch Win32 API errors.
-			throw Platform::Exception::CreateException(hr);
+			throw com_exception(hr);
 		}
 	}
 
 	// Function that reads from a binary file asynchronously.
-	inline Concurrency::task<std::vector<byte>> ReadDataAsync(const std::wstring& filename)
+	inline std::vector<uint8_t> ReadData(const std::wstring& filename)
 	{
-		using namespace Windows::Storage;
-		using namespace Concurrency;
-
-		auto folder = Windows::ApplicationModel::Package::Current->InstalledLocation;
-
-		return create_task(folder->GetFileAsync(Platform::StringReference(filename.c_str()))).then([] (StorageFile^ file) 
+		std::ifstream file(filename, std::ios::in | std::ios::binary | std::ios::ate);
+		
+		if (!file.is_open())
 		{
-			return FileIO::ReadBufferAsync(file);
-		}).then([] (Streams::IBuffer^ fileBuffer) -> std::vector<byte> 
-		{
-			std::vector<byte> returnBuffer;
-			returnBuffer.resize(fileBuffer->Length);
-			Streams::DataReader::FromBuffer(fileBuffer)->ReadBytes(Platform::ArrayReference<byte>(returnBuffer.data(), fileBuffer->Length));
-			return returnBuffer;
-		});
+			throw std::runtime_error("Failed to open file.");
+		}
+
+		std::streampos size = file.tellg();
+		file.seekg(0, std::ios::beg);
+
+		std::vector<uint8_t> returnBuffer(static_cast<size_t>(size));
+		file.read(reinterpret_cast<char*>(returnBuffer.data()), size);
+		file.close();
+
+		return returnBuffer;
 	}
 
 	// Converts a length in device-independent pixels (DIPs) to a length in physical pixels.

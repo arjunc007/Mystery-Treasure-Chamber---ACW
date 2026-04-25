@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <DirectXMath.h>
 
 namespace Mystery_Treasure_Chamber
 {

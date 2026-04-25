@@ -5,80 +5,36 @@
 using namespace D2D1;
 using namespace DirectX;
 using namespace Microsoft::WRL;
-using namespace Windows::Foundation;
-using namespace Windows::Graphics::Display;
-using namespace Windows::UI::Core;
-using namespace Windows::UI::Xaml::Controls;
-using namespace Platform;
-
-namespace DisplayMetrics
-{
-	// High resolution displays can require a lot of GPU and battery power to render.
-	// High resolution phones, for example, may suffer from poor battery life if
-	// games attempt to render at 60 frames per second at full fidelity.
-	// The decision to render at full fidelity across all platforms and form factors
-	// should be deliberate.
-	static const bool SupportHighResolutions = false;
-
-	// The default thresholds that define a "high resolution" display. If the thresholds
-	// are exceeded and SupportHighResolutions is false, the dimensions will be scaled
-	// by 50%.
-	static const float DpiThreshold = 192.0f;		// 200% of standard desktop display.
-	static const float WidthThreshold = 1920.0f;	// 1080p width.
-	static const float HeightThreshold = 1080.0f;	// 1080p height.
-};
-
-// Constants used to calculate screen rotations
-namespace ScreenRotation
-{
-	// 0-degree Z-rotation
-	static const XMFLOAT4X4 Rotation0(
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-		);
-
-	// 90-degree Z-rotation
-	static const XMFLOAT4X4 Rotation90(
-		0.0f, 1.0f, 0.0f, 0.0f,
-		-1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-		);
-
-	// 180-degree Z-rotation
-	static const XMFLOAT4X4 Rotation180(
-		-1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, -1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-		);
-
-	// 270-degree Z-rotation
-	static const XMFLOAT4X4 Rotation270(
-		0.0f, -1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f
-		);
-};
 
 // Constructor for DeviceResources.
 DX::DeviceResources::DeviceResources() :
 	m_screenViewport(),
 	m_d3dFeatureLevel(D3D_FEATURE_LEVEL_9_1),
-	m_d3dRenderTargetSize(),
-	m_outputSize(),
-	m_logicalSize(),
-	m_nativeOrientation(DisplayOrientations::None),
-	m_currentOrientation(DisplayOrientations::None),
-	m_dpi(-1.0f),
-	m_effectiveDpi(-1.0f),
+	m_outputWidth(0),
+	m_outputHeight(0),
+	m_logicalWidth(0),
+	m_logicalHeight(0),
+	m_dpi(96.0f),
+	m_effectiveDpi(96.0f),
+	m_window(nullptr),
 	m_deviceNotify(nullptr)
 {
 	CreateDeviceIndependentResources();
 	CreateDeviceResources();
+}
+
+DX::DeviceResources::~DeviceResources()
+{
+	if (m_d3dContext)
+	{
+		m_d3dContext->ClearState();
+		m_d3dContext->Flush();
+	}
+
+	if (m_swapChain)
+	{
+		m_swapChain->SetFullscreenState(FALSE, nullptr);
+	}
 }
 
 // Configures resources that don't depend on the Direct3D device.
@@ -234,22 +190,13 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 
 	UpdateRenderTargetSize();
 
-	// The width and height of the swap chain must be based on the window's
-	// natively-oriented width and height. If the window is not in the native
-	// orientation, the dimensions must be reversed.
-	DXGI_MODE_ROTATION displayRotation = ComputeDisplayRotation();
-
-	bool swapDimensions = displayRotation == DXGI_MODE_ROTATION_ROTATE90 || displayRotation == DXGI_MODE_ROTATION_ROTATE270;
-	m_d3dRenderTargetSize.Width = swapDimensions ? m_outputSize.Height : m_outputSize.Width;
-	m_d3dRenderTargetSize.Height = swapDimensions ? m_outputSize.Width : m_outputSize.Height;
-
 	if (m_swapChain != nullptr)
 	{
 		// If the swap chain already exists, resize it.
 		HRESULT hr = m_swapChain->ResizeBuffers(
 			2, // Double-buffered swap chain.
-			lround(m_d3dRenderTargetSize.Width),
-			lround(m_d3dRenderTargetSize.Height),
+			m_outputWidth,
+			m_outputHeight,
 			DXGI_FORMAT_B8G8R8A8_UNORM,
 			0
 			);
@@ -271,11 +218,10 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 	else
 	{
 		// Otherwise, create a new one using the same adapter as the existing Direct3D device.
-		DXGI_SCALING scaling = DisplayMetrics::SupportHighResolutions ? DXGI_SCALING_NONE : DXGI_SCALING_STRETCH;
 		DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {0};
 
-		swapChainDesc.Width = lround(m_d3dRenderTargetSize.Width);		// Match the size of the window.
-		swapChainDesc.Height = lround(m_d3dRenderTargetSize.Height);
+		swapChainDesc.Width = m_outputWidth;		// Match the size of the window.
+		swapChainDesc.Height = m_outputHeight;
 		swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;				// This is the most common swap chain format.
 		swapChainDesc.Stereo = false;
 		swapChainDesc.SampleDesc.Count = 1;								// Don't use multi-sampling.
@@ -284,7 +230,7 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 		swapChainDesc.BufferCount = 2;									// Use double-buffering to minimize latency.
 		swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;	// All Windows Store apps must use this SwapEffect.
 		swapChainDesc.Flags = 0;
-		swapChainDesc.Scaling = scaling;
+		swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
 		swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
 
 		// This sequence obtains the DXGI factory that was used to create the Direct3D device above.
@@ -305,10 +251,11 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 
 		ComPtr<IDXGISwapChain1> swapChain;
 		DX::ThrowIfFailed(
-			dxgiFactory->CreateSwapChainForCoreWindow(
+			dxgiFactory->CreateSwapChainForHwnd(
 				m_d3dDevice.Get(),
-				reinterpret_cast<IUnknown*>(m_window.Get()),
+				m_window,
 				&swapChainDesc,
+				nullptr,
 				nullptr,
 				&swapChain
 				)
@@ -323,48 +270,6 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 			dxgiDevice->SetMaximumFrameLatency(1)
 			);
 	}
-
-	// Set the proper orientation for the swap chain, and generate 2D and
-	// 3D matrix transformations for rendering to the rotated swap chain.
-	// Note the rotation angle for the 2D and 3D transforms are different.
-	// This is due to the difference in coordinate spaces.  Additionally,
-	// the 3D matrix is specified explicitly to avoid rounding errors.
-
-	switch (displayRotation)
-	{
-	case DXGI_MODE_ROTATION_IDENTITY:
-		m_orientationTransform2D = Matrix3x2F::Identity();
-		m_orientationTransform3D = ScreenRotation::Rotation0;
-		break;
-
-	case DXGI_MODE_ROTATION_ROTATE90:
-		m_orientationTransform2D = 
-			Matrix3x2F::Rotation(90.0f) *
-			Matrix3x2F::Translation(m_logicalSize.Height, 0.0f);
-		m_orientationTransform3D = ScreenRotation::Rotation270;
-		break;
-
-	case DXGI_MODE_ROTATION_ROTATE180:
-		m_orientationTransform2D = 
-			Matrix3x2F::Rotation(180.0f) *
-			Matrix3x2F::Translation(m_logicalSize.Width, m_logicalSize.Height);
-		m_orientationTransform3D = ScreenRotation::Rotation180;
-		break;
-
-	case DXGI_MODE_ROTATION_ROTATE270:
-		m_orientationTransform2D = 
-			Matrix3x2F::Rotation(270.0f) *
-			Matrix3x2F::Translation(0.0f, m_logicalSize.Width);
-		m_orientationTransform3D = ScreenRotation::Rotation90;
-		break;
-
-	default:
-		throw ref new FailureException();
-	}
-
-	DX::ThrowIfFailed(
-		m_swapChain->SetRotation(displayRotation)
-		);
 
 	// Create a render target view of the swap chain back buffer.
 	ComPtr<ID3D11Texture2D1> backBuffer;
@@ -383,8 +288,8 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 	// Create a depth stencil view for use with 3D rendering if needed.
 	CD3D11_TEXTURE2D_DESC1 depthStencilDesc(
 		DXGI_FORMAT_D24_UNORM_S8_UINT, 
-		lround(m_d3dRenderTargetSize.Width),
-		lround(m_d3dRenderTargetSize.Height),
+		m_outputWidth,
+		m_outputHeight,
 		1, // This depth stencil view has only one texture.
 		1, // Use a single mipmap level.
 		D3D11_BIND_DEPTH_STENCIL
@@ -412,8 +317,8 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 	m_screenViewport = CD3D11_VIEWPORT(
 		0.0f,
 		0.0f,
-		m_d3dRenderTargetSize.Width,
-		m_d3dRenderTargetSize.Height
+		static_cast<float>(m_outputWidth),
+		static_cast<float>(m_outputHeight)
 		);
 
 	m_d3dContext->RSSetViewports(1, &m_screenViewport);
@@ -453,53 +358,29 @@ void DX::DeviceResources::UpdateRenderTargetSize()
 {
 	m_effectiveDpi = m_dpi;
 
-	// To improve battery life on high resolution devices, render to a smaller render target
-	// and allow the GPU to scale the output when it is presented.
-	if (!DisplayMetrics::SupportHighResolutions && m_dpi > DisplayMetrics::DpiThreshold)
-	{
-		float width = DX::ConvertDipsToPixels(m_logicalSize.Width, m_dpi);
-		float height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_dpi);
-
-		// When the device is in portrait orientation, height > width. Compare the
-		// larger dimension against the width threshold and the smaller dimension
-		// against the height threshold.
-		if (max(width, height) > DisplayMetrics::WidthThreshold && min(width, height) > DisplayMetrics::HeightThreshold)
-		{
-			// To scale the app we change the effective DPI. Logical size does not change.
-			m_effectiveDpi /= 2.0f;
-		}
-	}
-
-	// Calculate the necessary render target size in pixels.
-	m_outputSize.Width = DX::ConvertDipsToPixels(m_logicalSize.Width, m_effectiveDpi);
-	m_outputSize.Height = DX::ConvertDipsToPixels(m_logicalSize.Height, m_effectiveDpi);
-
-	// Prevent zero size DirectX content from being created.
-	m_outputSize.Width = max(m_outputSize.Width, 1);
-	m_outputSize.Height = max(m_outputSize.Height, 1);
+	m_outputWidth = std::max(static_cast<UINT>(m_logicalWidth), 1u);
+	m_outputHeight = std::max(static_cast<UINT>(m_logicalHeight), 1u);
 }
 
-// This method is called when the CoreWindow is created (or re-created).
-void DX::DeviceResources::SetWindow(CoreWindow^ window)
+// This method is called when the Win32 window is created (or re-created).
+void DX::DeviceResources::SetWindow(HWND window, int width, int height)
 {
-	DisplayInformation^ currentDisplayInformation = DisplayInformation::GetForCurrentView();
-
 	m_window = window;
-	m_logicalSize = Windows::Foundation::Size(window->Bounds.Width, window->Bounds.Height);
-	m_nativeOrientation = currentDisplayInformation->NativeOrientation;
-	m_currentOrientation = currentDisplayInformation->CurrentOrientation;
-	m_dpi = currentDisplayInformation->LogicalDpi;
+	m_logicalWidth = static_cast<float>(width);
+	m_logicalHeight = static_cast<float>(height);
+	
 	m_d2dContext->SetDpi(m_dpi, m_dpi);
 
 	CreateWindowSizeDependentResources();
 }
 
 // This method is called in the event handler for the SizeChanged event.
-void DX::DeviceResources::SetLogicalSize(Windows::Foundation::Size logicalSize)
+void DX::DeviceResources::WindowSizeChanged(int width, int height)
 {
-	if (m_logicalSize != logicalSize)
+	if (m_outputWidth != static_cast<UINT>(width) || m_outputHeight != static_cast<UINT>(height))
 	{
-		m_logicalSize = logicalSize;
+		m_logicalWidth = static_cast<float>(width);
+		m_logicalHeight = static_cast<float>(height);
 		CreateWindowSizeDependentResources();
 	}
 }
@@ -511,20 +392,7 @@ void DX::DeviceResources::SetDpi(float dpi)
 	{
 		m_dpi = dpi;
 
-		// When the display DPI changes, the logical size of the window (measured in Dips) also changes and needs to be updated.
-		m_logicalSize = Windows::Foundation::Size(m_window->Bounds.Width, m_window->Bounds.Height);
-
 		m_d2dContext->SetDpi(m_dpi, m_dpi);
-		CreateWindowSizeDependentResources();
-	}
-}
-
-// This method is called in the event handler for the OrientationChanged event.
-void DX::DeviceResources::SetCurrentOrientation(DisplayOrientations currentOrientation)
-{
-	if (m_currentOrientation != currentOrientation)
-	{
-		m_currentOrientation = currentOrientation;
 		CreateWindowSizeDependentResources();
 	}
 }
@@ -644,59 +512,4 @@ void DX::DeviceResources::Present()
 	{
 		DX::ThrowIfFailed(hr);
 	}
-}
-
-// This method determines the rotation between the display device's native orientation and the
-// current display orientation.
-DXGI_MODE_ROTATION DX::DeviceResources::ComputeDisplayRotation()
-{
-	DXGI_MODE_ROTATION rotation = DXGI_MODE_ROTATION_UNSPECIFIED;
-
-	// Note: NativeOrientation can only be Landscape or Portrait even though
-	// the DisplayOrientations enum has other values.
-	switch (m_nativeOrientation)
-	{
-	case DisplayOrientations::Landscape:
-		switch (m_currentOrientation)
-		{
-		case DisplayOrientations::Landscape:
-			rotation = DXGI_MODE_ROTATION_IDENTITY;
-			break;
-
-		case DisplayOrientations::Portrait:
-			rotation = DXGI_MODE_ROTATION_ROTATE270;
-			break;
-
-		case DisplayOrientations::LandscapeFlipped:
-			rotation = DXGI_MODE_ROTATION_ROTATE180;
-			break;
-
-		case DisplayOrientations::PortraitFlipped:
-			rotation = DXGI_MODE_ROTATION_ROTATE90;
-			break;
-		}
-		break;
-
-	case DisplayOrientations::Portrait:
-		switch (m_currentOrientation)
-		{
-		case DisplayOrientations::Landscape:
-			rotation = DXGI_MODE_ROTATION_ROTATE90;
-			break;
-
-		case DisplayOrientations::Portrait:
-			rotation = DXGI_MODE_ROTATION_IDENTITY;
-			break;
-
-		case DisplayOrientations::LandscapeFlipped:
-			rotation = DXGI_MODE_ROTATION_ROTATE270;
-			break;
-
-		case DisplayOrientations::PortraitFlipped:
-			rotation = DXGI_MODE_ROTATION_ROTATE180;
-			break;
-		}
-		break;
-	}
-	return rotation;
 }

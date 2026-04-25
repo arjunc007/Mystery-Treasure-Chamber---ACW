@@ -4,7 +4,7 @@
 Texture2D txTexture : register(t0);
 SamplerState txSampler : register(s0);
 
-cbuffer ConstantBuffer : register(b0)
+cbuffer TimeBuffer : register(b0)
 {
 	float totalTime;
 	float deltaTime;

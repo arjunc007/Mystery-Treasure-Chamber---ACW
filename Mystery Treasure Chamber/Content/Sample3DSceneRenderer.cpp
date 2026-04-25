@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 #include "Sample3DSceneRenderer.h"
-
-#include "..\Common\DirectXHelper.h"
+#include "Common\DirectXHelper.h"
 #include "DDSTextureLoader.h"
 //#include "..\Common\BasicShapes.h"
 
@@ -10,7 +9,6 @@
 using namespace Mystery_Treasure_Chamber;
 
 using namespace DirectX;
-using namespace Windows::Foundation;
 
 // Loads vertex and pixel shaders from files and instantiates the cube geometry.
 Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceResources) :
@@ -26,12 +24,13 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 // Initializes view parameters when the window size changes.
 void Sample3DSceneRenderer::CreateWindowSizeDependentResources()
 {
-	Size outputSize = m_deviceResources->GetOutputSize();
-	float aspectRatio = outputSize.Width / outputSize.Height;
+	float width = static_cast<float>(m_deviceResources->GetOutputWidth());
+	float height = static_cast<float>(m_deviceResources->GetOutputHeight()); 
+	float aspectRatio = width / height;
 	float fovAngleY = 70.0f * XM_PI / 180.0f;
 
-	m_changesOnResizeConstantBufferData.height = outputSize.Height;
-	m_changesOnResizeConstantBufferData.width = outputSize.Width;
+	m_changesOnResizeConstantBufferData.height = height;
+	m_changesOnResizeConstantBufferData.width = width;
 
 	// This is a simple example of change that can be made when the app is in
 	// portrait or snapped view.
@@ -54,9 +53,7 @@ void Sample3DSceneRenderer::CreateWindowSizeDependentResources()
 		100.0f
 	);
 
-	XMFLOAT4X4 orientation = m_deviceResources->GetOrientationTransform3D();
-
-	XMMATRIX orientationMatrix = XMLoadFloat4x4(&orientation);
+	XMMATRIX orientationMatrix = XMMatrixIdentity();
 
 	XMStoreFloat4x4(
 		&m_constantBufferData.projection,
@@ -78,8 +75,8 @@ void Sample3DSceneRenderer::CreateWindowSizeDependentResources()
 	ZeroMemory(&textureDesc, sizeof(textureDesc));
 
 	// Setup the render target texture description.
-	textureDesc.Width = outputSize.Width;
-	textureDesc.Height = outputSize.Height;
+	textureDesc.Width = m_deviceResources->GetOutputWidth();
+	textureDesc.Height = m_deviceResources->GetOutputHeight();
 	textureDesc.MipLevels = 1;
 	textureDesc.ArraySize = 1;
 	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -611,32 +608,12 @@ void Sample3DSceneRenderer::Render()
 
 void Sample3DSceneRenderer::CreateDeviceDependentResources()
 {
-	// Load shaders asynchronously.
-	auto loadVSTask = DX::ReadDataAsync(L"SampleVertexShader.cso");
-	auto loadPSTask = DX::ReadDataAsync(L"RoomPixelShader.cso");
-	auto loadPSTask2 = DX::ReadDataAsync(L"PillarPixelShader.cso");
-	auto loadModelVS = DX::ReadDataAsync(L"ModelVertexShader.cso");
-	auto loadModelPS = DX::ReadDataAsync(L"ModelPixelShader.cso");
-	auto loadFloorPS = DX::ReadDataAsync(L"FloorPixelShader.cso");
-	auto loadParticleVSSO = DX::ReadDataAsync(L"ParticleVertexShaderSO.cso");
-	auto loadParticleVS = DX::ReadDataAsync(L"ParticleVertexShader.cso");
-	auto loadParticlePS = DX::ReadDataAsync(L"ParticlePixelShader.cso");
-	auto loadGSTask = DX::ReadDataAsync(L"GeometryShader.cso");
-	auto loadGroundVS = DX::ReadDataAsync(L"VertexShader.cso");
-	auto loadHSTask = DX::ReadDataAsync(L"HullShader.cso");
-	auto loadDSTask = DX::ReadDataAsync(L"DomainShader.cso");
-	auto loadGSSOTask = DX::ReadDataAsync(L"GeometryShaderSO.cso");
-
-	// After the vertex shader file is loaded, create the shader and input layout.
-	auto createVSTask = loadVSTask.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateVertexShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_canvasVertexShader
-			)
-		);
+	auto d3dDevice = m_deviceResources->GetD3DDevice();
+	
+	//Canvas vertex shader & input layout
+	{
+		auto fileData = DX::ReadData(L"SampleVertexShader.cso");
+		DX::ThrowIfFailed(d3dDevice->CreateVertexShader(fileData.data(), fileData.size(), nullptr, &m_canvasVertexShader));
 
 		static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
 		{
@@ -645,10 +622,10 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		};
 
 		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateInputLayout(
+			d3dDevice->CreateInputLayout(
 				vertexDesc,
 				ARRAYSIZE(vertexDesc),
-				&fileData[0],
+				fileData.data(),
 				fileData.size(),
 				&m_inputLayout
 			)
@@ -666,16 +643,17 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 		//Create texture sampler state
-		DX::ThrowIfFailed( 
+		DX::ThrowIfFailed(
 			m_deviceResources->GetD3DDevice()->CreateSamplerState(&samplerDesc, &m_samplerState)
 		);
-	});
+	}
 
-	// After the pixel shader file is loaded, create the shader and constant buffer.
-	auto createPSTask = loadPSTask.then([this](const std::vector<byte>& fileData) {
+	//Room pixel shader and constant buffers
+	{
+		auto fileData = DX::ReadData(L"RoomPixelShader.cso");
 		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreatePixelShader(
-				&fileData[0],
+			d3dDevice->CreatePixelShader(
+				fileData.data(),
 				fileData.size(),
 				nullptr,
 				&m_roomPixelShader
@@ -717,9 +695,11 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 				&m_timeBuffer
 			)
 		);
-	});
+	}
 
-	auto createPSTask2 = loadPSTask2.then([this](const std::vector<byte>& fileData) {
+	//Pillar pixel shader
+	{
+		auto fileData = DX::ReadData(L"PillarPixelShader.cso");
 		DX::ThrowIfFailed(
 			m_deviceResources->GetD3DDevice()->CreatePixelShader(
 				&fileData[0],
@@ -728,8 +708,8 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 				&m_pillarPixelShader
 			)
 		);
-	});
-
+	}
+	
 	m_psConstantBufferData.eye = XMFLOAT4(0.0f, 3.5f, 5.0f, 1.0f);
 	m_psConstantBufferData.nearPlane = 1.0f;
 	m_psConstantBufferData.farPlane = 100.0f;
@@ -739,16 +719,12 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 	m_psConstantBufferData.lightPos[2] = XMFLOAT4(0.0f, 60.0f, 5.0f, 1.0f);
 	m_psConstantBufferData.backgroundColor = XMFLOAT4(0.1f, 0.2f, 0.3f, 1.0f);
 	m_psConstantBufferData.padding = XMFLOAT2();
+	
+	//Model Shaders
+	{
+		auto vsData = DX::ReadData(L"ModelVertexShader.cso");
+		DX::ThrowIfFailed(d3dDevice->CreateVertexShader(vsData.data(), vsData.size(), nullptr, &m_modelVertexShader));
 
-	auto createModelVS = loadModelVS.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateVertexShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_modelVertexShader
-			)
-		);
 		static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -759,130 +735,64 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		};
 
 		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateInputLayout(
+			d3dDevice->CreateInputLayout(
 				vertexDesc,
 				ARRAYSIZE(vertexDesc),
-				&fileData[0],
-				fileData.size(),
+				vsData.data(),
+				vsData.size(),
 				&m_modelInputLayout
 			)
 		);
-	});
 
-	auto createModelPS = loadModelPS.then([this](const std::vector<byte>& fileData) {
+		auto psData = DX::ReadData(L"ModelPixelShader.cso");
 		DX::ThrowIfFailed(
 			m_deviceResources->GetD3DDevice()->CreatePixelShader(
-				&fileData[0],
-				fileData.size(),
+				psData.data(),
+				psData.size(),
 				nullptr,
 				&m_modelPixelShader
 			)
 		);
-	});
+	}
 
-	auto createParticleVSTask = loadParticleVS.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateVertexShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_particleVertexShader
-			)
-		);
-	});
+	//Particle Shaders
+	{
+		auto vsData = DX::ReadData(L"ParticleVertexShader.cso");
+		DX::ThrowIfFailed(d3dDevice->CreateVertexShader(vsData.data(), vsData.size(), nullptr, &m_particleVertexShader));
 
-	auto createParticleVSSOTask = loadParticleVSSO.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateVertexShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_particleVertexShaderSO
-			)
-		);
+		auto vsSOData = DX::ReadData(L"ParticleVertexShaderSO.cso");
+		DX::ThrowIfFailed(d3dDevice->CreateVertexShader(vsSOData.data(), vsSOData.size(), nullptr, &m_particleVertexShaderSO));
 
-		static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
-		{
+		static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] = {
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TEXCOORD", 1, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TEXCOORD", 2, DXGI_FORMAT_R32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TEXCOORD", 3, DXGI_FORMAT_R32_UINT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
+		DX::ThrowIfFailed(d3dDevice->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), vsSOData.data(), vsSOData.size(), &m_particleInputLayout));
 
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateInputLayout(
-				vertexDesc,
-				ARRAYSIZE(vertexDesc),
-				&fileData[0],
-				fileData.size(),
-				&m_particleInputLayout
-			)
-		);
-	});
+		auto psData = DX::ReadData(L"ParticlePixelShader.cso");
+		DX::ThrowIfFailed(d3dDevice->CreatePixelShader(psData.data(), psData.size(), nullptr, &m_particlePixelShader));
 
-	auto createFloorPSTask = loadFloorPS.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreatePixelShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_floorPixelShader
-			)
-		);
-	});
+		auto gsData = DX::ReadData(L"GeometryShader.cso");
+		DX::ThrowIfFailed(d3dDevice->CreateGeometryShader(gsData.data(), gsData.size(), nullptr, &m_particleGeometryShader));
 
-	auto createGSTask = loadGSTask.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateGeometryShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_particleGeometryShader
-			)
-		);
-	});
-
-	auto createGSSOTask = (loadGSSOTask).then([this](const std::vector<byte>& fileData) {
-		D3D11_SO_DECLARATION_ENTRY pDecl[] =
-		{
-			// semantic name, semantic index, start component, component count, output slot
-			{ 0, "POSITION", 0, 0, 3, 0 },   // output all components of position
-			{ 0, "TEXCOORD", 0, 0, 3, 0 },     // output the first 3 of the normal
-			{ 0, "TEXCOORD", 1, 0, 2, 0 },		// output the first 2 texture coordinates
+		auto gsSOData = DX::ReadData(L"GeometryShaderSO.cso");
+		D3D11_SO_DECLARATION_ENTRY pDecl[] = {
+			{ 0, "POSITION", 0, 0, 3, 0 },
+			{ 0, "TEXCOORD", 0, 0, 3, 0 },
+			{ 0, "TEXCOORD", 1, 0, 2, 0 },
 			{ 0, "TEXCOORD", 2, 0, 1, 0 },
 			{ 0, "TEXCOORD", 3, 0, 1, 0 },
 		};
+		DX::ThrowIfFailed(d3dDevice->CreateGeometryShaderWithStreamOutput(gsSOData.data(), gsSOData.size(), pDecl, ARRAYSIZE(pDecl), NULL, 0, D3D11_SO_NO_RASTERIZED_STREAM, nullptr, &m_particleGeometryShaderSO));
+	}
 
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateGeometryShaderWithStreamOutput(
-				&fileData[0],
-				fileData.size(),
-				pDecl,
-				ARRAYSIZE(pDecl),
-				NULL,
-				0,
-				D3D11_SO_NO_RASTERIZED_STREAM,
-				nullptr,
-				&m_particleGeometryShaderSO
-				)
-		);
-	});
-
-	auto createParticlePS = loadParticlePS.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreatePixelShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_particlePixelShader
-			)
-		);
-
-		//Create additive blend state
+	//Blending and render states
+	{
 		D3D11_BLEND_DESC additiveBlendDesc;
 		ZeroMemory(&additiveBlendDesc, sizeof(D3D11_BLEND_DESC));
-		// Create an alpha enabled blend state description.
 		additiveBlendDesc.AlphaToCoverageEnable = FALSE;
 		additiveBlendDesc.RenderTarget[0].BlendEnable = TRUE;
 		additiveBlendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
@@ -892,112 +802,51 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		additiveBlendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
 		additiveBlendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 		additiveBlendDesc.RenderTarget[0].RenderTargetWriteMask = 0x0f;
+		DX::ThrowIfFailed(d3dDevice->CreateBlendState(&additiveBlendDesc, &m_additiveBlend));
 
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBlendState(
-				&additiveBlendDesc,
-				&m_additiveBlend
-			)
-		);
-
-		//Create depth state for particles
 		D3D11_DEPTH_STENCIL_DESC depthDesc;
 		ZeroMemory(&depthDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
 		depthDesc.DepthEnable = TRUE;
 		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
-
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateDepthStencilState(
-				&depthDesc,
-				&m_noWriteDepthState
-			)
-		);
+		DX::ThrowIfFailed(d3dDevice->CreateDepthStencilState(&depthDesc, &m_noWriteDepthState));
 
 		D3D11_RASTERIZER_DESC cullDesc;
 		cullDesc.FillMode = D3D11_FILL_SOLID;
 		cullDesc.CullMode = D3D11_CULL_BACK;
+		DX::ThrowIfFailed(d3dDevice->CreateRasterizerState(&cullDesc, &m_DisableCullState));
+	}
 
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateRasterizerState(
-				&cullDesc,
-				&m_DisableCullState
-			)
-		);
-	});
+	//Floor shaders
+	{
+		auto vsData = DX::ReadData(L"VertexShader.cso");
+		DX::ThrowIfFailed(d3dDevice->CreateVertexShader(vsData.data(), vsData.size(), nullptr, &m_groundVertexShader));
 
-	auto createGroundVSTask = loadGroundVS.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateVertexShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_groundVertexShader
-			)
-		);
-	});
+		auto hsData = DX::ReadData(L"HullShader.cso");
+		DX::ThrowIfFailed(d3dDevice->CreateHullShader(hsData.data(), hsData.size(), nullptr, &m_hullShader));
 
-	auto createHSTask = loadHSTask.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateHullShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_hullShader
-			)
-		);
-	});
+		auto dsData = DX::ReadData(L"DomainShader.cso");
+		DX::ThrowIfFailed(d3dDevice->CreateDomainShader(dsData.data(), dsData.size(), nullptr, &m_domainShader));
 
-	auto createDSTask = loadDSTask.then([this](const std::vector<byte>& fileData) {
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateDomainShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_domainShader
-			)
-		);
-	});
+		auto psData = DX::ReadData(L"FloorPixelShader.cso");
+		DX::ThrowIfFailed(d3dDevice->CreatePixelShader(psData.data(), psData.size(), nullptr, &m_floorPixelShader));
+	}
 
-	auto createTextureTask = (createModelVS && createModelPS).then([this]() {
-		DX::ThrowIfFailed(
-			CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"Assets\\Textures\\Scales2.DDS", nullptr, &m_scalesTexture)
-		);
-		DX::ThrowIfFailed(
-			CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"Assets\\Textures\\Stone_Wall_002_COLOR.DDS", nullptr, &m_floorTexture)
-		);
+	//Textures
+	{
+		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Scales2.DDS", nullptr, &m_scalesTexture));
+		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Stone_Wall_002_COLOR.DDS", nullptr, &m_floorTexture));
+		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Stone_Wall_002_DISP.DDS", nullptr, &m_floorDisplacementTexture));
+		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Stone_Wall_002_NRM.DDS", nullptr, &m_floorNormalTexture));
+		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\StoneWall_1024_albedo.DDS", nullptr, &m_wallTexture));
+		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\StoneWall_1024_normal.DDS", nullptr, &m_wallHeightTexture));
+		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\fire.DDS", nullptr, &m_fireTexture));
+		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\noise.DDS", nullptr, &m_noiseTexture));
+	}
 
-		DX::ThrowIfFailed(
-			CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"Assets\\Textures\\Stone_Wall_002_DISP.DDS", nullptr, &m_floorDisplacementTexture)
-		);
-
-		DX::ThrowIfFailed(
-			CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"Assets\\Textures\\Stone_Wall_002_NRM.DDS", nullptr, &m_floorNormalTexture)
-		);
-
-		DX::ThrowIfFailed(
-			CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"Assets\\Textures\\StoneWall_1024_albedo.DDS", nullptr, &m_wallTexture)
-		);
-
-		DX::ThrowIfFailed(
-			CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"Assets\\Textures\\StoneWall_1024_normal.DDS", nullptr, &m_wallHeightTexture)
-		);
-
-		DX::ThrowIfFailed(
-			CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"Assets\\Textures\\fire.DDS", nullptr, &m_fireTexture)
-		);
-
-		DX::ThrowIfFailed(
-			CreateDDSTextureFromFile(m_deviceResources->GetD3DDevice(), L"Assets\\Textures\\noise.DDS", nullptr, &m_noiseTexture)
-		);
-	});
-
-	// Once both shaders are loaded, create the mesh.
-	auto createCubeTask = (createPSTask && createVSTask).then([this]() {
-
-		// Load mesh vertices. Each vertex has a position and a color.
-		static const VertexPositionColor cubeVertices[] =
-		{
+	//Cube Geometry
+	{
+		static const VertexPositionColor cubeVertices[] = {
 			{ XMFLOAT3(-0.5f, -0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, 0.0f) },
 			{ XMFLOAT3(-0.5f, -0.5f,  0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
 			{ XMFLOAT3(-0.5f,  0.5f, -0.5f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
@@ -1010,223 +859,121 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 
 		D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
 		vertexBufferData.pSysMem = cubeVertices;
-		vertexBufferData.SysMemPitch = 0;
-		vertexBufferData.SysMemSlicePitch = 0;
 		CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(cubeVertices), D3D11_BIND_VERTEX_BUFFER);
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBuffer(
-				&vertexBufferDesc,
-				&vertexBufferData,
-				&m_cubeVertexBuffer
-			)
-		);
+		DX::ThrowIfFailed(d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_cubeVertexBuffer));
 
-		// Load mesh indices. Each trio of indices represents
-		// a triangle to be rendered on the screen.
-		// For example: 0,2,1 means that the vertices with indexes
-		// 0, 2 and 1 from the vertex buffer compose the 
-		// first triangle of this mesh.
-		static const unsigned short cubeIndices[] =
-		{
-			0,2,1, // -x
-			1,2,3,
-
-			4,5,6, // +x
-			5,7,6,
-
-			0,1,5, // -y
-			0,5,4,
-
-			2,6,7, // +y
-			2,7,3,
-
-			0,4,6, // -z
-			0,6,2,
-
-			1,3,7, // +z
-			1,7,5,
+		static const unsigned short cubeIndices[] = {
+			0,2,1, 1,2,3,
+			4,5,6, 5,7,6,
+			0,1,5, 0,5,4,
+			2,6,7, 2,7,3,
+			0,4,6, 0,6,2,
+			1,3,7, 1,7,5,
 		};
-
 		m_indexCount = ARRAYSIZE(cubeIndices);
 
 		D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
 		indexBufferData.pSysMem = cubeIndices;
-		indexBufferData.SysMemPitch = 0;
-		indexBufferData.SysMemSlicePitch = 0;
 		CD3D11_BUFFER_DESC indexBufferDesc(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBuffer(
-				&indexBufferDesc,
-				&indexBufferData,
-				&m_indexBuffer
-			)
-		);
-	});
+		DX::ThrowIfFailed(d3dDevice->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_indexBuffer));
+	}
 
-	auto createQuadTask = (createPSTask && createGroundVSTask).then([this]() {
-		// Load mesh vertices. Each vertex has a position and a color.
-		static const VertexPositionTextureNTB quadVertices[] =
-		{
-			{ XMFLOAT3(-1.0f, 0.0f, 1.0f), XMFLOAT2(0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(-1.0f, 0.0f,  -1.0f), XMFLOAT2(0, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(1.0f, 0.0f, 1.0f), XMFLOAT2(1, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(1.0f, 0.0f,  -1.0f), XMFLOAT2(1, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+	//Quad Geometry
+	{
+		static const VertexPositionTextureNTB quadVertices[] = {
+			{ XMFLOAT3(-1.0f, 0.0f,  1.0f), XMFLOAT2(0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+			{ XMFLOAT3(-1.0f, 0.0f, -1.0f), XMFLOAT2(0, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+			{ XMFLOAT3(1.0f, 0.0f,  1.0f), XMFLOAT2(1, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+			{ XMFLOAT3(1.0f, 0.0f, -1.0f), XMFLOAT2(1, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
 		};
 
 		D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
 		vertexBufferData.pSysMem = quadVertices;
-		vertexBufferData.SysMemPitch = 0;
-		vertexBufferData.SysMemSlicePitch = 0;
 		CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(quadVertices), D3D11_BIND_VERTEX_BUFFER);
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBuffer(
-				&vertexBufferDesc,
-				&vertexBufferData,
-				&m_quadVertexBuffer
-			)
-		);
+		DX::ThrowIfFailed(d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_quadVertexBuffer));
 
 		D3D11_RASTERIZER_DESC rasterizerDesc = CD3D11_RASTERIZER_DESC(D3D11_DEFAULT);
 		rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
 		rasterizerDesc.CullMode = D3D11_CULL_NONE;
-
-		m_deviceResources->GetD3DDevice()->CreateRasterizerState(&rasterizerDesc,
-			m_wireframeState.GetAddressOf());
+		d3dDevice->CreateRasterizerState(&rasterizerDesc, m_wireframeState.GetAddressOf());
 
 		rasterizerDesc.FillMode = D3D11_FILL_SOLID;
 		rasterizerDesc.CullMode = D3D11_CULL_FRONT;
+		d3dDevice->CreateRasterizerState(&rasterizerDesc, m_cullFrontState.GetAddressOf());
+	}
 
-		m_deviceResources->GetD3DDevice()->CreateRasterizerState(&rasterizerDesc,
-			m_cullFrontState.GetAddressOf());
-	});
-
-	auto createSnakeTask = (createModelPS && createModelVS).then([this]() {
+	//Snake geometry
+	{
 		std::ifstream fin("Assets/Models/Snake.txt");
-
-		if (fin.fail())
-			int c = 9;
-
-		char input = ' ';
-
-		fin.get(input);
-
-		while (input != ':')
+		if (fin.is_open())
 		{
+			char input = ' ';
 			fin.get(input);
-		}
+			while (input != ':') { fin.get(input); }
 
-		//Read number of vertices
-		int count;
-
-		fin >> count;
-
-		fin.get(input);
-
-		while (input != ':')
-		{
+			int count;
+			fin >> count;
 			fin.get(input);
-		}
 
-		fin.get(input);
-		fin.get(input);
+			while (input != ':') { fin.get(input); }
+			fin.get(input); fin.get(input);
 
-		std::vector<VertexPositionTextureNTB> vertices;
+			std::vector<VertexPositionTextureNTB> vertices;
+			float x, y, z;
+			VertexPositionTextureNTB vertex;
 
-		float x, y, z;
-		VertexPositionTextureNTB vertex;
-
-		for (int i = 0; i < count; i++)
-		{
-			//Position
-			fin >> x >> y >> z;
-			vertex.position = DirectX::XMFLOAT3(x, y, z);
-
-			//Texture
-			fin >> x >> y;
-			vertex.texture = DirectX::XMFLOAT2(x, y);
-
-			//Normal
-			fin >> x >> y >> z;
-			vertex.normal = DirectX::XMFLOAT3(x, y, z);
-
-			//Tangent
-			fin >> x >> y >> z;
-			vertex.tangent = DirectX::XMFLOAT3(x, y, z);
-
-			//Binormal
-			fin >> x >> y >> z;
-			vertex.binormal = DirectX::XMFLOAT3(x, y, z);
-
-			vertices.push_back(vertex);
-		}
-
-		fin.close();
-
-		m_vertexCount = count;
-
-		D3D11_BUFFER_DESC bd;
-		ZeroMemory(&bd, sizeof(bd));
-
-		bd.Usage = D3D11_USAGE_DYNAMIC;                // write access access by CPU and GPU
-		bd.ByteWidth = sizeof(VertexPositionTextureNTB) * vertices.size();   // size is the VERTEX struct * num vertices
-		bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;       // use as a vertex buffer
-		bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;    // allow CPU to write in buffer
-
-		m_deviceResources->GetD3DDevice()->CreateBuffer(&bd, NULL, &m_snakeVertexBuffer);        // create the buffer
-
-																								 // copy the vertices into the buffer
-		D3D11_MAPPED_SUBRESOURCE ms;
-		m_deviceResources->GetD3DDeviceContext()->Map(m_snakeVertexBuffer.Get(), NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);		// map the buffer
-		memcpy(ms.pData, vertices.data(), sizeof(VertexPositionTextureNTB) * vertices.size());			// copy the data
-		m_deviceResources->GetD3DDeviceContext()->Unmap(m_snakeVertexBuffer.Get(), NULL);
-	});
-
-	auto createParticlesTask = (createParticlePS && createParticleVSTask && createGSTask).then([this]() {
-		// Load mesh vertices. Each vertex has a position and a color.
-		/*std::vector<Particle> particleVertices;
-
-		particleVertices.push_back({ XMFLOAT3(0, 0, 0), XMFLOAT3(1.0f, 0.0f, 0.0f) });
-
-		for (float y = 0.01f; y < .3f; y += 0.01f)
-		{
-			for (int theta = 0; theta < 360; theta += 5)
+			for (int i = 0; i < count; i++)
 			{
-				particleVertices.push_back({XMFLOAT3(y/2 * sin(XMConvertToRadians(theta)), y, y/2 * cos(XMConvertToRadians(theta))), XMFLOAT3(1.0f, 0.0f, 0.0f)});
+				fin >> x >> y >> z; vertex.position = DirectX::XMFLOAT3(x, y, z);
+				fin >> x >> y;      vertex.texture = DirectX::XMFLOAT2(x, y);
+				fin >> x >> y >> z; vertex.normal = DirectX::XMFLOAT3(x, y, z);
+				fin >> x >> y >> z; vertex.tangent = DirectX::XMFLOAT3(x, y, z);
+				fin >> x >> y >> z; vertex.binormal = DirectX::XMFLOAT3(x, y, z);
+				vertices.push_back(vertex);
 			}
-		}*/
+			fin.close();
 
+			m_vertexCount = count;
+
+			D3D11_BUFFER_DESC bd;
+			ZeroMemory(&bd, sizeof(bd));
+			bd.Usage = D3D11_USAGE_DYNAMIC;
+			bd.ByteWidth = static_cast<UINT>(sizeof(VertexPositionTextureNTB) * vertices.size());
+			bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+			bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+			d3dDevice->CreateBuffer(&bd, NULL, &m_snakeVertexBuffer);
+
+			D3D11_MAPPED_SUBRESOURCE ms;
+			m_deviceResources->GetD3DDeviceContext()->Map(m_snakeVertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &ms);
+			memcpy(ms.pData, vertices.data(), sizeof(VertexPositionTextureNTB) * vertices.size());
+			m_deviceResources->GetD3DDeviceContext()->Unmap(m_snakeVertexBuffer.Get(), 0);
+		}
+	}
+
+	//Particles
+	{
 		m_maxParticles = 1000;
 
-		Particle particleVertices[] = {
-			{XMFLOAT3(), XMFLOAT3(), XMFLOAT2(0.015f, 0.015f), 0.0f, 0.0f}
-		};
+		// Create a safe block of memory for all 1000 particles, initialized to zero
+		std::vector<Particle> particleVertices(m_maxParticles);
+
+		// Set the very first particle (the emitter)
+		particleVertices[0] = { XMFLOAT3(0,0,0), XMFLOAT3(0,0,0), XMFLOAT2(0.015f, 0.015f), 0.0f, 0 };
 
 		D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
-		vertexBufferData.pSysMem = particleVertices;
-		vertexBufferData.SysMemPitch = 0;
-		vertexBufferData.SysMemSlicePitch = 0;
-		CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(particleVertices) * m_maxParticles, D3D11_BIND_VERTEX_BUFFER | D3D11_BIND_STREAM_OUTPUT);
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBuffer(
-				&vertexBufferDesc,
-				&vertexBufferData,
-				&m_particleVertexBuffer
-			)
-		);
+		vertexBufferData.pSysMem = particleVertices.data();
 
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBuffer(
-				&vertexBufferDesc,
-				0,
-				&m_particleVertexBufferSO
-			)
-		);
-	});
+		CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(Particle) * m_maxParticles, D3D11_BIND_VERTEX_BUFFER | D3D11_BIND_STREAM_OUTPUT);
 
-	// Once everything is loaded, the object is ready to be rendered.
-	(createCubeTask && createParticlesTask && createSnakeTask && createQuadTask && createTextureTask).then([this]() {
-		m_loadingComplete = true;
-	});
+		// Create the buffers safely
+		DX::ThrowIfFailed(d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_particleVertexBuffer));
+
+		// For the Stream Output buffer, we don't pass initial data (pass nullptr)
+		DX::ThrowIfFailed(d3dDevice->CreateBuffer(&vertexBufferDesc, nullptr, &m_particleVertexBufferSO));
+	}
+
+	m_loadingComplete = true;
 }
 
 void Sample3DSceneRenderer::ReleaseDeviceDependentResources()
