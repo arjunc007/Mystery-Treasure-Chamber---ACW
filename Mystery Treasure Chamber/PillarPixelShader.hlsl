@@ -257,28 +257,19 @@ float4 Phong(float3 n, float3 l, float3 v, float shininess, float4 diffuseColor,
 
 float4 Shade(float3 Position, float3 normal, float3 viewDir, float3 color)
 {
-	float4 spec = float4(1, 1, 1, 1);
+    float4 diffuse = float4(color, 1.0f);
+	float4 spec = diffuse * 0.15f;
 
 	float4 output = (float4)0;
 	float3 lightDir;
 
 	for (int i = 0; i < NUMLIGHTS; i++)
 	{
-		lightDir = normalize(LightPos[i] - Position);
+		lightDir = normalize(LightPos[i].xyz - Position);
 		output += Phong(normal, lightDir, viewDir, 40, float4(color, 1.0f), spec);
 	}
 
 	return saturate(LightColor * output);
-}
-
-float2 CalcUV(float3 Position, float3 normal)
-{
-	float3 u = float3(normal.y, -normal.x, 0);
-	u = normalize(u);
-	float3 v = cross(normal, u);
-
-	return float2(dot(u, Position), dot(v, Position));
-
 }
 
 float4 RayMarching(Ray ray, float2 tex)
@@ -286,6 +277,7 @@ float4 RayMarching(Ray ray, float2 tex)
 	float4 result = (float4)0;
 	float start, final;
 	float t;
+	
 	if (IntersectBox(ray, BoxMinimum, BoxMaximum, start, final))
 	{
 		if (RayMarchingInsideCube(ray, start, final, t))
@@ -293,15 +285,21 @@ float4 RayMarching(Ray ray, float2 tex)
 			float3 Position = ray.o + ray.d * t;
 			float3 normal = CalcNormal(Position);
 			
-			float P = Function(Position);
+            float3 up = abs(normal.y) < 0.99f ? float3(0.0f, 1.0f, 0.0f) : float3(1.0f, 0.0f, 0.0f);
+            float3 tangent = normalize(cross(up, normal));
+            float3 binormal = cross(normal, tangent);
+			
+            float2 UV = float2(dot(tangent, Position), dot(binormal, Position));
+			
+            float3 color = txTexture.SampleLevel(txSampler, 0.5f * UV, 0).rgb;
+            float3 tangentNormal = txNormal.SampleLevel(txSampler, 0.5f * UV, 0).rgb * 2.0f - 1.0f;
+			
+            float3x3 TBN = float3x3(tangent, binormal, normal);
+            float3 worldNormal = normalize(mul(tangentNormal, TBN));
+			
+            float3 viewDir = -ray.d;
 
-			float2 UV = CalcUV(Position, normal);
-
-			float3 color = txTexture.Sample(txSampler, 0.5 * UV);
-
-			float3 texNormal = normalize(2 * txNormal.Sample(txSampler, 0.5 * UV).rgb - float3(1, 1, 1));
-
-			result = Shade(Position, texNormal, ray.d, color);
+			result = Shade(Position, worldNormal, viewDir, color);
 		}
 		else
 		{

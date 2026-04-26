@@ -293,7 +293,7 @@ void Sample3DSceneRenderer::Render()
 		0
 	);
 
-	XMMATRIX model = XMMatrixIdentity() * XMMatrixScaling(5, 5, 5) * XMMatrixTranslation(0.0f, -2.5f, 0.0f);
+	XMMATRIX model = XMMatrixIdentity() * XMMatrixScaling(5.5f, 5.5f, 5) * XMMatrixTranslation(0.0f, -2.5f, 0.0f);
 
 	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(model));
 

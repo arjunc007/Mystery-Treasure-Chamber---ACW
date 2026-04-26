@@ -33,6 +33,7 @@ struct VS_OUTPUT
 {
 	float4 Position : SV_POSITION;
 	float2 Texture : TEXCOORD0;
+    float3 WorldPos : TEXCOORD1;
 	float3 normal : NORMAL;
 };
 
@@ -54,7 +55,8 @@ VS_OUTPUT main(VS_INPUT Input)
 	Output.Position = mul(Output.Position, view);
 	Output.Position = mul(Output.Position, projection);
 	Output.Texture = Input.tex;
-	Output.normal = -Input.norm;
+    Output.normal = normalize(mul(Input.norm, (float3x3)model));
+    Output.WorldPos = mul(Pos, model).xyz;
 
 	return(Output);
 

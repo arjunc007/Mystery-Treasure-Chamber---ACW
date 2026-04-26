@@ -127,16 +127,16 @@ float4 Phong(float3 n, float3 l, float3 v, float shininess, float4 diffuseColor,
 
 float4 Shade(float3 Position, float3 normal, float3 viewDir, float3 color)
 {
-	float4 diff = float4(1, 1, 1, 1);
-	float4 spec = float4(0, 1, 0, 1);
+	float4 diff = float4(color, 1.0f);
+	float4 spec = diff * 0.15f;
 
 	float4 output = (float4)0;
 	float3 lightDir;
 
 	for (int i = 0; i < NUMLIGHTS; i++)
 	{
-		lightDir = normalize(LightPos[i] - Position);
-		output += float4(color, 1.0) * Phong(normal, lightDir, viewDir, 40, diff, spec);
+		lightDir = normalize(LightPos[i].xyz - Position);
+		output += float4(color, 1.0) * Phong(normal, lightDir, viewDir, 40.0f, diff, spec);
 	}
 
 	return saturate(LightColor * output);
@@ -144,11 +144,15 @@ float4 Shade(float3 Position, float3 normal, float3 viewDir, float3 color)
 
 float2 CalcUV(float3 Position, float3 normal)
 {
-	float3 u = float3(normal.y, -normal.x, 0);
-	u = normalize(u);
-	float3 v = cross(normal, u);
+    float3 absN = abs(normal);
+	
+    if (absN.x > absN.y && absN.x > absN.z)
+        return Position.zy;
+	
+    if (absN.y > absN.x && absN.y > absN.z)
+        return Position.xz;
 
-	return float2(dot(u, Position), dot(v, Position));
+	return Position.xy;
 
 }
 
@@ -157,6 +161,7 @@ float4 RayMarching(Ray ray)
 	float4 result = (float4)0;
 	float start, final;
 	float t;
+	
 	if (IntersectBox(ray, BoxMinimum, BoxMaximum, start, final))
 	{
 		if (RayMarchingInsideCube(ray, start, final, t))
@@ -164,9 +169,11 @@ float4 RayMarching(Ray ray)
 			float3 Position = ray.o + ray.d * t;
 			float3 normal = CalcNormal(Position);
 
-			float3 color = txTexture.Sample(txSampler, CalcUV(Position, normal));
+            float2 UV = CalcUV(Position, normal);
+			
+			float3 color = txTexture.SampleLevel(txSampler, 0.5f * UV, 0).rgb;
 
-			result = Shade(Position, normal, ray.d, color);
+			result = Shade(Position, normal, -ray.d, color);
 		}
 	}
 	return result;
