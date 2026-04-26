@@ -3,7 +3,9 @@
 #include "Common\DeviceResources.h"
 #include "ShaderStructures.h"
 #include "Common\StepTimer.h"
-#include "Material.h"
+#include <vector>
+
+class MeshObject;
 
 namespace Mystery_Treasure_Chamber
 {
@@ -72,7 +74,7 @@ namespace Mystery_Treasure_Chamber
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_fireTexture;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_noiseTexture;
 
-		Material m_snakeMaterial;
+		std::vector<std::shared_ptr<MeshObject>> m_snakes;
 
 		// System resources for cube geometry.
 		ConstantBuffer						m_timeBufferData;

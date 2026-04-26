@@ -149,10 +149,12 @@
     <ClInclude Include="Content\ShaderStructures.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Material.h" />
+    <ClInclude Include="MeshObject.h" />
     <ClInclude Include="Mystery Treasure Chamber.h" />
     <ClInclude Include="Mystery_Treasure_ChamberMain.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SceneObject.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
@@ -161,8 +163,10 @@
     <ClCompile Include="Content\Sample3DSceneRenderer.cpp" />
     <ClCompile Include="Content\SampleFpsTextRenderer.cpp" />
     <ClCompile Include="Material.cpp" />
+    <ClCompile Include="MeshObject.cpp" />
     <ClCompile Include="Mystery Treasure Chamber.cpp" />
     <ClCompile Include="Mystery_Treasure_ChamberMain.cpp" />
+    <ClCompile Include="SceneObject.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Mystery Treasure Chamber.rc" />
