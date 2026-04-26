@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "Sample3DSceneRenderer.h"
 #include "Common\DirectXHelper.h"
-#include "DDSTextureLoader.h"
+#include "Common\DDSTextureLoader.h"
 //#include "..\Common\BasicShapes.h"
 
 #include <fstream>

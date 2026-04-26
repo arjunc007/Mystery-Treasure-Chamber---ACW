@@ -21,6 +21,7 @@ struct VS_OUTPUT
 {
 	float4 Position : SV_POSITION;
 	float2 Texture : TEXCOORD0;
+    float3 WorldPos : TEXCOORD1;
 };
 
 float4 Phong(float3 n, float3 l, float3 v, float shininess, float4 diffuseColor, float4 specularColor)
@@ -41,14 +42,14 @@ float4 main(VS_OUTPUT Input) : SV_TARGET
 
 	float4 color = (float4)0;
 	float3 lightDir;
-	float3 viewDir = normalize(Eye.xyz - Input.Position.xyz);
+	float3 viewDir = normalize(Eye.xyz - Input.WorldPos.xyz);
 
 	float3 normal = normalize((txNormal.Sample(txSampler, Input.Texture).rgb) * 2 - (float3)1);
-
+  
 	for (int i = 0; i < NUMLIGHTS; i++)
 	{
-		lightDir = normalize(LightPos[i].xyz - Input.Position.xyz);
-		color += Phong(normal, lightDir, viewDir, 15, diff, spec);
+		lightDir = normalize(LightPos[i].xyz - Input.WorldPos.xyz);
+		color += Phong(normal, lightDir, viewDir, 40, diff, spec);
 	}
 
 	return saturate(LightColor * 0.5f * color);
