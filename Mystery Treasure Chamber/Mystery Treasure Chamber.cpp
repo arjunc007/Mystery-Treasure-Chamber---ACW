@@ -8,8 +8,6 @@
 #include "Common/DeviceResources.h"
 #include "Mystery_Treasure_ChamberMain.h"
 
-#define MAX_LOADSTRING 100
-
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[] = L"Mystery Treasure Chamber";                  // The title bar text
@@ -32,11 +30,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return FALSE;
 
-    // TODO: Place code here.
-
-    // Initialize global strings
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_MYSTERYTREASURECHAMBER, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
     const int width = 1280;

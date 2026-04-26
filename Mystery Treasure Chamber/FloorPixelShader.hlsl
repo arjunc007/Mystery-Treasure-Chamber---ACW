@@ -34,8 +34,10 @@ float4 Phong(float3 n, float3 l, float3 v, float shininess, float4 diffuseColor,
 
 float4 main(VS_OUTPUT Input) : SV_TARGET
 {
-	float4 spec = float4(1, 1, 1, 1);
-	float4 diff = txTexture.Sample(txSampler, Input.Texture);
+    float4 diff = txTexture.Sample(txSampler, Input.Texture);
+	
+    float specularIntensity = 0.15f;
+    float4 spec = diff * specularIntensity;
 
 	float4 color = (float4)0;
 	float3 lightDir;
@@ -46,7 +48,7 @@ float4 main(VS_OUTPUT Input) : SV_TARGET
 	for (int i = 0; i < NUMLIGHTS; i++)
 	{
 		lightDir = normalize(LightPos[i].xyz - Input.Position.xyz);
-		color += Phong(normal, lightDir, viewDir, 40, diff, spec);
+		color += Phong(normal, lightDir, viewDir, 15, diff, spec);
 	}
 
 	return saturate(LightColor * 0.5f * color);

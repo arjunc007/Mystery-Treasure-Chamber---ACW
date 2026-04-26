@@ -2,17 +2,21 @@
 
 struct HS_INPUT
 {
-	float4 pos : SV_POSITION;
+	float4 pos : POSITION;
 	float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 binormal : BINORMAL;
 };
 
 // Output control point
 struct HS_CONTROL_POINT_OUTPUT
 {
-	float4 vPosition : SV_POSITION;
+	float4 vPosition : POSITION;
 	float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 binormal : BINORMAL;
 };
 
 // Output patch constant data.
@@ -62,6 +66,8 @@ HS_CONTROL_POINT_OUTPUT main(
 	Output.vPosition = pos;
 	Output.tex = ip[i].tex;
 	Output.normal = ip[i].normal;
-
+    Output.tangent = ip[i].tangent;
+    Output.binormal = ip[i].binormal;
+	
 	return Output;
 }

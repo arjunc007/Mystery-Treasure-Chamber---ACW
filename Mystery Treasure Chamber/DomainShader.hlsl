@@ -15,15 +15,20 @@ struct DS_OUTPUT
 {
 	float4 vPosition  : SV_POSITION;
 	float2 Texture : TEXCOORD0;
-	// TODO: change/add other stuff
+    float3 WorldPos : TEXCOORD1;
+    float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
+    float3 Binormal : BINORMAL;
 };
 
 // Output control point
 struct HS_CONTROL_POINT_OUTPUT
 {
-	float4 vPosition : SV_POSITION;
+	float4 vPosition : POSITION;
 	float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 binormal : BINORMAL;
 };
 
 // Output patch constant data.
@@ -73,31 +78,37 @@ DS_OUTPUT main(
 	const OutputPatch<HS_CONTROL_POINT_OUTPUT, NUM_CONTROL_POINTS> patch)
 {
 	DS_OUTPUT Output;
-
-	float4 U = BernsteinBasis(UV.x);
-	float4 V = BernsteinBasis(UV.y);
-
-	float4 dU = dBernsteinBasis(UV.x);
-	float4 dV = dBernsteinBasis(UV.y);
-
-	//float3 WorldPos = EvaluateBezier(patch, U, V);
-	//float3 Tangent = EvaluateBezier(patch, dU, V);
-	//float3 BiNormal = EvaluateBezier(patch, U, dV);
-	//float3 Norm = normalize(cross(Tangent, BiNormal));
-
+	
 	float3 vPos1 = (1.0 - UV.y)*patch[0].vPosition.xyz
 			+ UV.y* patch[1].vPosition.xyz;
 	float3 vPos2 = (1.0 - UV.y)*patch[2].vPosition.xyz
 			+ UV.y* patch[3].vPosition.xyz;
 	float3 uvPos = (1.0 - UV.x)*vPos1 + UV.x* vPos2;
+	
+    float height = txDisplacement.SampleLevel(txSampler, UV, 0).r;
+    height = 1.0f - height;
 
-	uvPos += 0.03f * txDisplacement.SampleLevel(txSampler, UV, 0).xyz * -patch[0].normal;
+	uvPos += 0.03f * height * -patch[0].normal;
 
 	Output.vPosition = mul(float4(uvPos, 1.0f), model);
 	Output.vPosition = mul(Output.vPosition, view);
 	Output.vPosition = mul(Output.vPosition, projection);
 
 	Output.Texture = UV;
+	
+    float3 n1 = (1.0 - UV.y) * patch[0].normal + UV.y * patch[1].normal;
+    float3 n2 = (1.0 - UV.y) * patch[2].normal + UV.y * patch[3].normal;
+    Output.Normal = normalize((1.0 - UV.x) * n1 + UV.x * n2);
+	
+    float3 t1 = (1.0 - UV.y) * patch[0].tangent + UV.y * patch[1].tangent;
+    float3 t2 = (1.0 - UV.y) * patch[2].tangent + UV.y * patch[3].tangent;
+    Output.Tangent = normalize((1.0 - UV.x) * t1 + UV.x * t2);
+
+    float3 b1 = (1.0 - UV.y) * patch[0].binormal + UV.y * patch[1].binormal;
+    float3 b2 = (1.0 - UV.y) * patch[2].binormal + UV.y * patch[3].binormal;
+    Output.Binormal = normalize((1.0 - UV.x) * b1 + UV.x * b2);
+	
+    Output.WorldPos = mul(float4(uvPos, 1.0f), model).xyz;
 
 	return Output;
 }

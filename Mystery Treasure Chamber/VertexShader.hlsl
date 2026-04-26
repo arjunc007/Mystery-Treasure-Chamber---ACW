@@ -10,9 +10,11 @@ struct VS_INPUT
 
 struct HS_INPUT
 {
-	float4 pos : SV_POSITION;
+	float4 pos : POSITION;
 	float2 tex : TEXCOORD0;
 	float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 binormal : BINORMAL;
 };
 
 HS_INPUT main( VS_INPUT input )
@@ -22,6 +24,8 @@ HS_INPUT main( VS_INPUT input )
 	output.pos = float4(input.pos, 1.0f);
 	output.tex = input.tex;
 	output.normal = input.norm;
+    output.tangent = input.tangent;
+    output.binormal = input.binormal;
 
 	return output;
 }
