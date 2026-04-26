@@ -3,6 +3,7 @@
 #include "Common\DeviceResources.h"
 #include "ShaderStructures.h"
 #include "Common\StepTimer.h"
+#include "Material.h"
 
 namespace Mystery_Treasure_Chamber
 {
@@ -38,8 +39,6 @@ namespace Mystery_Treasure_Chamber
 		Microsoft::WRL::ComPtr<ID3D11VertexShader>		m_canvasVertexShader;
 		Microsoft::WRL::ComPtr<ID3D11PixelShader>		m_roomPixelShader;
 		Microsoft::WRL::ComPtr<ID3D11PixelShader>		m_pillarPixelShader;
-		Microsoft::WRL::ComPtr<ID3D11VertexShader>		m_modelVertexShader;
-		Microsoft::WRL::ComPtr<ID3D11PixelShader>		m_modelPixelShader;
 		Microsoft::WRL::ComPtr<ID3D11PixelShader>		m_floorPixelShader;
 		Microsoft::WRL::ComPtr<ID3D11VertexShader>		m_particleVertexShader;
 		Microsoft::WRL::ComPtr<ID3D11VertexShader>		m_particleVertexShaderSO;
@@ -61,7 +60,6 @@ namespace Mystery_Treasure_Chamber
 		Microsoft::WRL::ComPtr<ID3D11RenderTargetView>	m_renderTargetView;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_shaderResourceView;
 		Microsoft::WRL::ComPtr<ID3D11SamplerState>		m_samplerState;
-		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_scalesTexture;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_floorTexture;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_floorDisplacementTexture;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_floorNormalTexture;
@@ -73,6 +71,8 @@ namespace Mystery_Treasure_Chamber
 		Microsoft::WRL::ComPtr<ID3D11RasterizerState>	m_cullFrontState;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_fireTexture;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_noiseTexture;
+
+		Material m_snakeMaterial;
 
 		// System resources for cube geometry.
 		ConstantBuffer						m_timeBufferData;

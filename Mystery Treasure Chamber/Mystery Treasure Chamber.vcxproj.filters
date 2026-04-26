@@ -69,6 +69,9 @@
     <ClInclude Include="Common\DDSTextureLoader.h">
       <Filter>Header Files\Common</Filter>
     </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Mystery Treasure Chamber.cpp">
@@ -88,6 +91,9 @@
     </ClCompile>
     <ClCompile Include="Common\DDSTextureLoader.cpp">
       <Filter>Source Files\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

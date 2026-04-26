@@ -2,6 +2,7 @@
 #include "Sample3DSceneRenderer.h"
 #include "Common\DirectXHelper.h"
 #include "Common\DDSTextureLoader.h"
+#include "Material.h"
 //#include "..\Common\BasicShapes.h"
 
 #include <fstream>
@@ -422,15 +423,6 @@ void Sample3DSceneRenderer::Render()
 
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	context->IASetInputLayout(m_modelInputLayout.Get());
-
-	// Attach our vertex shader.
-	context->VSSetShader(
-		m_modelVertexShader.Get(),
-		nullptr,
-		0
-	);
-
 	model = XMMatrixScaling(3, 3, 3) * XMMatrixRotationX(-90)* XMMatrixTranslation(1.5f, -2.5f, 0.0f);
 
 	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(model));
@@ -445,16 +437,7 @@ void Sample3DSceneRenderer::Render()
 		0
 	);
 
-	context->PSSetShaderResources(0, 1, m_scalesTexture.GetAddressOf());
-
-	// Attach our pixel shader.
-	context->PSSetShader(
-		m_modelPixelShader.Get(),
-		nullptr,
-		0
-	);
-
-	context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
+	m_snakeMaterial.Bind(context);
 
 	// Draw the objects.
 	context->Draw(m_vertexCount, 0);
@@ -723,7 +706,6 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 	//Model Shaders
 	{
 		auto vsData = DX::ReadData(L"ModelVertexShader.cso");
-		DX::ThrowIfFailed(d3dDevice->CreateVertexShader(vsData.data(), vsData.size(), nullptr, &m_modelVertexShader));
 
 		static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
 		{
@@ -743,16 +725,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 				&m_modelInputLayout
 			)
 		);
-
-		auto psData = DX::ReadData(L"ModelPixelShader.cso");
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreatePixelShader(
-				psData.data(),
-				psData.size(),
-				nullptr,
-				&m_modelPixelShader
-			)
-		);
+		m_snakeMaterial.Initialize(d3dDevice, L"ModelVertexShader.cso", L"ModelPixelShader.cso", L"Assets\\Textures\\Scales2.DDS");
 	}
 
 	//Particle Shaders
@@ -834,7 +807,6 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 
 	//Textures
 	{
-		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Scales2.DDS", nullptr, &m_scalesTexture));
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Stone_Wall_002_COLOR.DDS", nullptr, &m_floorTexture));
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Stone_Wall_002_DISP.DDS", nullptr, &m_floorDisplacementTexture));
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Stone_Wall_002_NRM.DDS", nullptr, &m_floorNormalTexture));
@@ -982,13 +954,11 @@ void Sample3DSceneRenderer::ReleaseDeviceDependentResources()
 	m_canvasVertexShader.Reset();
 	m_particleVertexShader.Reset();
 	m_particleVertexShaderSO.Reset();
-	m_modelVertexShader.Reset();
 	m_inputLayout.Reset();
 	m_modelInputLayout.Reset();
 	m_particleInputLayout.Reset();
 	m_roomPixelShader.Reset();
 	m_pillarPixelShader.Reset();
-	m_modelPixelShader.Reset();
 	m_particlePixelShader.Reset();
 	m_particleGeometryShader.Reset();
 	m_constantBuffer.Reset();
@@ -1009,7 +979,6 @@ void Sample3DSceneRenderer::ReleaseDeviceDependentResources()
 	m_renderTargetView.Reset();
 	m_shaderResourceView.Reset();
 	m_samplerState.Reset();
-	m_scalesTexture.Reset();
 	m_floorTexture.Reset();
 	m_cullFrontState.Reset();
 	m_floorDisplacementTexture.Reset();

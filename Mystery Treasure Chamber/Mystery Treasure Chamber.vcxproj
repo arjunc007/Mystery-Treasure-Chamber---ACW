@@ -148,6 +148,7 @@
     <ClInclude Include="Content\SampleFpsTextRenderer.h" />
     <ClInclude Include="Content\ShaderStructures.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Material.h" />
     <ClInclude Include="Mystery Treasure Chamber.h" />
     <ClInclude Include="Mystery_Treasure_ChamberMain.h" />
     <ClInclude Include="pch.h" />
@@ -159,6 +160,7 @@
     <ClCompile Include="Common\DeviceResources.cpp" />
     <ClCompile Include="Content\Sample3DSceneRenderer.cpp" />
     <ClCompile Include="Content\SampleFpsTextRenderer.cpp" />
+    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mystery Treasure Chamber.cpp" />
     <ClCompile Include="Mystery_Treasure_ChamberMain.cpp" />
   </ItemGroup>
