@@ -36,6 +36,29 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 	m_scene->LightingData.backgroundColor = XMFLOAT4(0.1f, 0.2f, 0.3f, 1.0f);
 	m_scene->LightingData.padding = XMFLOAT2();
 
+	//Add the floor
+	auto floorMat = std::make_shared<Material>();
+	floorMat->Initialize(d3dDevice, L"VertexShader.cso", L"FloorPixelShader.cso", 
+		L"Assets\\Textures\\Stone_Wall_002_COLOR.DDS",
+		L"Assets\\Textures\\Stone_Wall_002_NRM.DDS",
+		L"HullShader.cso", L"DomainShader.cso", 
+		L"Assets\\Textures\\Stone_Wall_002_DISP.DDS");
+
+	const std::vector<VertexPositionTextureNTB> floorVerts = {
+			{ XMFLOAT3(-1.0f, 0.0f,  1.0f), XMFLOAT2(0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+			{ XMFLOAT3(-1.0f, 0.0f, -1.0f), XMFLOAT2(0, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+			{ XMFLOAT3(1.0f, 0.0f,  1.0f), XMFLOAT2(1, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+			{ XMFLOAT3(1.0f, 0.0f, -1.0f), XMFLOAT2(1, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
+	};
+
+	const std::vector<unsigned short> floorIndices = { 0, 1, 2, 3 };
+	auto floor = std::make_shared<MeshObject>(
+		d3dDevice, floorVerts.data(), sizeof(VertexPositionTextureNTB), floorVerts.size(), floorIndices,
+		floorMat, D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
+	floor->Position = { 0.0f, -2.5f, 0.0f };
+	floor->Scale = { 5.5f, 5.5f, 5.0f };
+	m_scene->AddMeshObject(floor);
+
 	//Add snakes to the scene
 	auto snakeMaterial = std::make_shared<Material>();
 	snakeMaterial->Initialize(
@@ -204,8 +227,8 @@ void Sample3DSceneRenderer::CreateWindowSizeDependentResources()
 // Called once per frame, rotates the cube and calculates the model and view matrices.
 void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
 {
-	m_timeBufferData.time = timer.GetTotalSeconds();
-	m_timeBufferData.deltaTime = timer.GetElapsedSeconds();
+	m_timeBufferData.time = static_cast<float>(timer.GetTotalSeconds());
+	m_timeBufferData.deltaTime =static_cast<float>(timer.GetElapsedSeconds());
 }
 
 // Rotate the 3D cube model a set amount of radians.
@@ -335,38 +358,6 @@ void Sample3DSceneRenderer::Render()
 	//Clear depth buffer
 	context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-	stride = sizeof(VertexPositionTextureNTB);
-	offset = 0;
-
-	context->IASetVertexBuffers(
-		0,
-		1,
-		m_quadVertexBuffer.GetAddressOf(),
-		&stride,
-		&offset
-	);
-
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
-
-	context->IASetInputLayout(m_modelInputLayout.Get());
-
-	// Attach our vertex shader.
-	context->VSSetShader(
-		m_groundVertexShader.Get(),
-		nullptr,
-		0
-	);
-
-	context->HSSetShader(
-		m_hullShader.Get(),
-		nullptr,
-		0
-	);
-
-	XMMATRIX model = XMMatrixIdentity() * XMMatrixScaling(5.5f, 5.5f, 5) * XMMatrixTranslation(0.0f, -2.5f, 0.0f);
-
-	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(model));
-
 	context->UpdateSubresource1(
 		m_constantBuffer.Get(),
 		0,
@@ -385,38 +376,9 @@ void Sample3DSceneRenderer::Render()
 		nullptr
 	);
 
-	context->DSSetConstantBuffers1(
-		0,
-		1,
-		m_constantBuffer.GetAddressOf(),
-		nullptr,
-		nullptr
-	);
-
-	context->DSSetShaderResources(0, 1, m_floorDisplacementTexture.GetAddressOf());
-	context->DSSetSamplers(0, 1, m_samplerState.GetAddressOf());
-
-	context->DSSetShader(
-		m_domainShader.Get(),
-		nullptr,
-		0
-	);
-
-	// Attach our pixel shader.
-	context->PSSetShader(
-		m_floorPixelShader.Get(),
-		nullptr,
-		0
-	);
-
-	context->PSSetShaderResources(0, 1, m_floorTexture.GetAddressOf());
-	context->PSSetShaderResources(1, 1, m_floorNormalTexture.GetAddressOf());
-	context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
-
 	//context->RSSetState(m_cullFrontState.Get());
 
 	//Draw the quad
-	context->Draw(4, 0);
 
 	context->RSSetState(nullptr);
 
@@ -541,7 +503,7 @@ void Sample3DSceneRenderer::Render()
 		0
 	);
 
-	model = XMMatrixIdentity() * XMMatrixScaling(3, 3, 3);
+	XMMATRIX model = XMMatrixIdentity() * XMMatrixScaling(3, 3, 3);
 
 	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(model));
 
@@ -823,26 +785,8 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		DX::ThrowIfFailed(d3dDevice->CreateRasterizerState(&cullDesc, &m_DisableCullState));
 	}
 
-	//Floor shaders
-	{
-		auto vsData = DX::ReadData(L"VertexShader.cso");
-		DX::ThrowIfFailed(d3dDevice->CreateVertexShader(vsData.data(), vsData.size(), nullptr, &m_groundVertexShader));
-
-		auto hsData = DX::ReadData(L"HullShader.cso");
-		DX::ThrowIfFailed(d3dDevice->CreateHullShader(hsData.data(), hsData.size(), nullptr, &m_hullShader));
-
-		auto dsData = DX::ReadData(L"DomainShader.cso");
-		DX::ThrowIfFailed(d3dDevice->CreateDomainShader(dsData.data(), dsData.size(), nullptr, &m_domainShader));
-
-		auto psData = DX::ReadData(L"FloorPixelShader.cso");
-		DX::ThrowIfFailed(d3dDevice->CreatePixelShader(psData.data(), psData.size(), nullptr, &m_floorPixelShader));
-	}
-
 	//Textures
 	{
-		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Stone_Wall_002_COLOR.DDS", nullptr, &m_floorTexture));
-		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Stone_Wall_002_DISP.DDS", nullptr, &m_floorDisplacementTexture));
-		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\Stone_Wall_002_NRM.DDS", nullptr, &m_floorNormalTexture));
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\StoneWall_1024_albedo.DDS", nullptr, &m_wallTexture));
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\StoneWall_1024_normal.DDS", nullptr, &m_wallHeightTexture));
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\fire.DDS", nullptr, &m_fireTexture));
@@ -884,31 +828,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 	}
 
 	//Quad Geometry
-	{
-		static const VertexPositionTextureNTB quadVertices[] = {
-			{ XMFLOAT3(-1.0f, 0.0f,  1.0f), XMFLOAT2(0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(-1.0f, 0.0f, -1.0f), XMFLOAT2(0, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(1.0f, 0.0f,  1.0f), XMFLOAT2(1, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(1.0f, 0.0f, -1.0f), XMFLOAT2(1, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-		};
-
-		D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
-		vertexBufferData.pSysMem = quadVertices;
-		CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(quadVertices), D3D11_BIND_VERTEX_BUFFER);
-		DX::ThrowIfFailed(d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_quadVertexBuffer));
-
-		D3D11_RASTERIZER_DESC rasterizerDesc = CD3D11_RASTERIZER_DESC(D3D11_DEFAULT);
-		rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME;
-		rasterizerDesc.CullMode = D3D11_CULL_NONE;
-		d3dDevice->CreateRasterizerState(&rasterizerDesc, m_wireframeState.GetAddressOf());
-
-		rasterizerDesc.FillMode = D3D11_FILL_SOLID;
-		rasterizerDesc.CullMode = D3D11_CULL_FRONT;
-		d3dDevice->CreateRasterizerState(&rasterizerDesc, m_cullFrontState.GetAddressOf());
-	}
-
 	//Snake geometry
-	
 
 	//Particles
 	{
@@ -952,25 +872,16 @@ void Sample3DSceneRenderer::ReleaseDeviceDependentResources()
 	m_psConstantBuffer.Reset();
 	m_changesOnResizeConstantBuffer.Reset();
 	m_cubeVertexBuffer.Reset();
-	m_quadVertexBuffer.Reset();
-	m_snakeVertexBuffer.Reset();
 	m_particleVertexBuffer.Reset();
 	m_indexBuffer.Reset();
 	m_additiveBlend.Reset();
 	m_noWriteDepthState.Reset();
-	m_groundVertexShader.Reset();
-	m_hullShader.Reset();
-	m_domainShader.Reset();
 	m_wireframeState.Reset();
 	m_renderTargetTexture.Reset();
 	m_renderTargetView.Reset();
 	m_shaderResourceView.Reset();
 	m_samplerState.Reset();
-	m_floorTexture.Reset();
 	m_cullFrontState.Reset();
-	m_floorDisplacementTexture.Reset();
-	m_floorNormalTexture.Reset();
-	m_floorPixelShader.Reset();
 	m_wallHeightTexture.Reset();
 	m_wallTexture.Reset();
 	m_fireTexture.Reset();

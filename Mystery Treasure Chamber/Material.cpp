@@ -5,6 +5,11 @@
 
 std::vector<char> Material::ReadCompiledShader(const std::wstring& filename)
 {
+	/*if (filename.empty())
+	{
+		return {};
+	}*/
+
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 	if (!file.is_open())
 	{
@@ -20,7 +25,13 @@ std::vector<char> Material::ReadCompiledShader(const std::wstring& filename)
 	return buffer;
 }
 
-bool Material::Initialize(ID3D11Device* device, const std::wstring& vsPath, const std::wstring& psPath, const std::wstring& texturePath)
+bool Material::Initialize(ID3D11Device* device, const std::wstring& vsPath, 
+						const std::wstring& psPath, 
+						const std::wstring& texturePath,
+						const std::wstring& normalPath,
+						const std::wstring& hsPath,
+						const std::wstring& dsPath,
+						const std::wstring& displacementPath)
 {
 	auto vsData = ReadCompiledShader(vsPath);
 	if (vsData.empty())
@@ -50,6 +61,28 @@ bool Material::Initialize(ID3D11Device* device, const std::wstring& vsPath, cons
 
 	DX::ThrowIfFailed(DirectX::CreateDDSTextureFromFile(device, texturePath.c_str(), nullptr, m_texture.GetAddressOf()));
 
+	auto hsData = ReadCompiledShader(hsPath);
+	if (!hsData.empty())
+	{
+		device->CreateHullShader(hsData.data(), hsData.size(), nullptr, m_hullShader.GetAddressOf());
+	}
+
+	auto dsData = ReadCompiledShader(dsPath);
+	if (!dsData.empty())
+	{
+		device->CreateDomainShader(dsData.data(), dsData.size(), nullptr, m_domainShader.GetAddressOf());
+	}
+
+	if (!normalPath.empty())
+	{
+		DX::ThrowIfFailed(DirectX::CreateDDSTextureFromFile(device, normalPath.c_str(), nullptr, m_normalTexture.GetAddressOf()));
+	}
+
+	if (!displacementPath.empty())
+	{
+		DX::ThrowIfFailed(DirectX::CreateDDSTextureFromFile(device, displacementPath.c_str(), nullptr, m_displacementTexture.GetAddressOf()));
+	}
+
 	D3D11_SAMPLER_DESC samplerDesc;
 	ZeroMemory(&samplerDesc, sizeof(samplerDesc));
 	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -70,5 +103,28 @@ void Material::Bind(ID3D11DeviceContext* context)
 	context->VSSetShader(m_vertexShader.Get(), nullptr, 0);
 	context->PSSetShader(m_pixelShader.Get(), nullptr, 0);
 	context->PSSetShaderResources(0, 1, m_texture.GetAddressOf());
+
+	if (m_normalTexture)
+	{
+		context->PSSetShaderResources(1, 1, m_normalTexture.GetAddressOf());
+	}
+
 	context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
+
+	if (m_hullShader && m_domainShader)
+	{
+		context->HSSetShader(m_hullShader.Get(), nullptr, 0);
+		context->DSSetShader(m_domainShader.Get(), nullptr, 0);
+
+		if (m_displacementTexture)
+		{
+			context->DSSetShaderResources(0, 1, m_displacementTexture.GetAddressOf());
+		}
+		context->DSSetSamplers(0, 1, m_samplerState.GetAddressOf());
+	}
+	else
+	{
+		context->HSSetShader(nullptr, nullptr, 0);
+		context->DSSetShader(nullptr, nullptr, 0);
+	}
 }

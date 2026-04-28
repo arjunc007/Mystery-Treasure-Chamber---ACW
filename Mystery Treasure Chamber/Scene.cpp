@@ -64,6 +64,7 @@ void Scene::Render(ID3D11DeviceContext* context)
         // Upload the entire MVP struct to the GPU
         context->UpdateSubresource(m_mvpConstantBuffer.Get(), 0, nullptr, &MatrixData, 0, 0);
         context->VSSetConstantBuffers(0, 1, m_mvpConstantBuffer.GetAddressOf());
+        context->DSSetConstantBuffers(0, 1, m_mvpConstantBuffer.GetAddressOf());
 
         context->UpdateSubresource(m_timeConstantBuffer.Get(), 0, nullptr, &TimeData, 0, 0);
         context->VSSetConstantBuffers(2, 1, m_timeConstantBuffer.GetAddressOf());

@@ -1,7 +1,12 @@
 #include "pch.h"
 #include "MeshObject.h"
 
-MeshObject::MeshObject(ID3D11Device* device, const void* vertexData, UINT vertexSize, UINT vertexCount, const std::vector<unsigned short>& indices, std::shared_ptr<Material> material)
+MeshObject::MeshObject(ID3D11Device* device, const void* vertexData, 
+						UINT vertexSize, 
+						UINT vertexCount, 
+						const std::vector<unsigned short>& indices, 
+						std::shared_ptr<Material> material,
+						D3D11_PRIMITIVE_TOPOLOGY topology)
 {
 	m_material = material;
 	m_vertexStride = vertexSize;
@@ -24,6 +29,8 @@ MeshObject::MeshObject(ID3D11Device* device, const void* vertexData, UINT vertex
 	D3D11_SUBRESOURCE_DATA iInitData = {};
 	iInitData.pSysMem = indices.data();
 	device->CreateBuffer(&ibd, &iInitData, m_indexBuffer.GetAddressOf());
+
+	m_topology = topology;
 }
 
 void MeshObject::Draw(ID3D11DeviceContext* context)
@@ -33,7 +40,7 @@ void MeshObject::Draw(ID3D11DeviceContext* context)
 	UINT offset = 0;
 	context->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &m_vertexStride, &offset);
 	context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	context->IASetPrimitiveTopology(m_topology);
 
 	context->DrawIndexed(m_indexCount, 0, 0);
 }

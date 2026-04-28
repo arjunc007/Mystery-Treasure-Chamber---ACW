@@ -9,7 +9,8 @@ public:
 	MeshObject(ID3D11Device* device,
 		const void* vertexData, UINT vertexSize, UINT vertexCount,
 		const std::vector<unsigned short>& indices,
-		std::shared_ptr<Material> material);
+		std::shared_ptr<Material> material,
+		D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	void Draw(ID3D11DeviceContext* context) override;
 
@@ -20,5 +21,6 @@ private:
 	UINT m_vertexStride;
 
 	std::shared_ptr<Material> m_material;
+	D3D11_PRIMITIVE_TOPOLOGY m_topology;
 };
 
