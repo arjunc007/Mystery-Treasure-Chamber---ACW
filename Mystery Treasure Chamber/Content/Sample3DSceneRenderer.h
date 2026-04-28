@@ -3,8 +3,8 @@
 #include "Common\DeviceResources.h"
 #include "ShaderStructures.h"
 #include "Common\StepTimer.h"
-#include <vector>
 
+class Scene;
 class MeshObject;
 
 namespace Mystery_Treasure_Chamber
@@ -14,6 +14,7 @@ namespace Mystery_Treasure_Chamber
 	{
 	public:
 		Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceResources>& deviceResources);
+		~Sample3DSceneRenderer();
 		void CreateDeviceDependentResources();
 		void CreateWindowSizeDependentResources();
 		void ReleaseDeviceDependentResources();
@@ -74,7 +75,7 @@ namespace Mystery_Treasure_Chamber
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_fireTexture;
 		Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_noiseTexture;
 
-		std::vector<std::shared_ptr<MeshObject>> m_snakes;
+		std::unique_ptr<Scene> m_scene;
 
 		// System resources for cube geometry.
 		ConstantBuffer						m_timeBufferData;

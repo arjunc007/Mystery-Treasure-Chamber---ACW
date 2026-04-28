@@ -154,6 +154,7 @@
     <ClInclude Include="Mystery_Treasure_ChamberMain.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneObject.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -166,6 +167,7 @@
     <ClCompile Include="MeshObject.cpp" />
     <ClCompile Include="Mystery Treasure Chamber.cpp" />
     <ClCompile Include="Mystery_Treasure_ChamberMain.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneObject.cpp" />
   </ItemGroup>
   <ItemGroup>

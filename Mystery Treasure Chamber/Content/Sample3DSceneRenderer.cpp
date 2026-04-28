@@ -3,6 +3,7 @@
 #include "Common\DirectXHelper.h"
 #include "Common\DDSTextureLoader.h"
 #include "MeshObject.h"
+#include "Scene.h"
 //#include "..\Common\BasicShapes.h"
 
 #include <fstream>
@@ -18,9 +19,93 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 	m_indexCount(0),
 	m_deviceResources(deviceResources)
 {
+	ID3D11Device* d3dDevice = m_deviceResources->GetD3DDevice();
+
+	m_scene = std::make_unique<Scene>();
+
+	m_scene->Initialize(d3dDevice);
+
+	//Set up PS constant buffer
+	m_scene->LightingData.eye = XMFLOAT4(0.0f, 3.5f, 5.0f, 1.0f);
+	m_scene->LightingData.nearPlane = 1.0f;
+	m_scene->LightingData.farPlane = 100.0f;
+	m_scene->LightingData.lightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
+	m_scene->LightingData.lightPos[0] = XMFLOAT4(-10.0f, 10.0f, -50.0f, 1.0f);
+	m_scene->LightingData.lightPos[1] = XMFLOAT4(10.0f, 10.0f, 50.0f, 1.0f);
+	m_scene->LightingData.lightPos[2] = XMFLOAT4(0.0f, 60.0f, 5.0f, 1.0f);
+	m_scene->LightingData.backgroundColor = XMFLOAT4(0.1f, 0.2f, 0.3f, 1.0f);
+	m_scene->LightingData.padding = XMFLOAT2();
+
+	//Add snakes to the scene
+	auto snakeMaterial = std::make_shared<Material>();
+	snakeMaterial->Initialize(
+		d3dDevice,
+		L"ModelVertexShader.cso",
+		L"ModelPixelShader.cso",
+		L"Assets\\Textures\\Scales2.DDS"
+	);
+
+	std::ifstream fin("Assets/Models/Snake.txt");
+	if (fin.is_open())
+	{
+		char input = ' ';
+		fin.get(input);
+		while (input != ':') { fin.get(input); }
+
+		int count;
+		fin >> count;
+		fin.get(input);
+
+		while (input != ':') { fin.get(input); }
+		fin.get(input); fin.get(input);
+
+		std::vector<VertexPositionTextureNTB> vertices;
+		std::vector<unsigned short> snakeIndices;
+		float x, y, z;
+		VertexPositionTextureNTB vertex;
+
+		for (int i = 0; i < count; i++)
+		{
+			fin >> x >> y >> z; vertex.position = DirectX::XMFLOAT3(x, y, z);
+			fin >> x >> y;      vertex.texture = DirectX::XMFLOAT2(x, y);
+			fin >> x >> y >> z; vertex.normal = DirectX::XMFLOAT3(x, y, z);
+			fin >> x >> y >> z; vertex.tangent = DirectX::XMFLOAT3(x, y, z);
+			fin >> x >> y >> z; vertex.binormal = DirectX::XMFLOAT3(x, y, z);
+			vertices.push_back(vertex);
+			snakeIndices.push_back(i);
+		}
+		fin.close();
+
+		auto leftSnake = std::make_shared<MeshObject>(
+			d3dDevice,
+			vertices.data(),
+			sizeof(VertexPositionTextureNTB),
+			(UINT)vertices.size(),
+			snakeIndices,
+			snakeMaterial
+		);
+		leftSnake->Position = { -1.5f, -4.5f, 0.0f };
+		leftSnake->Scale = { 3.0f, 3.0f, 3.0f };
+		m_scene->AddMeshObject(leftSnake);
+
+		auto rightSnake = std::make_shared<MeshObject>(
+			d3dDevice,
+			vertices.data(),
+			sizeof(VertexPositionTextureNTB),
+			(UINT)vertices.size(),
+			snakeIndices,
+			snakeMaterial
+		);
+		rightSnake->Position = { 1.5f, -4.5f, 0.0f };
+		rightSnake->Scale = { 3.0f, 3.0f, 3.0f };
+		m_scene->AddMeshObject(rightSnake);
+	}
+
 	CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
 }
+
+Sample3DSceneRenderer::~Sample3DSceneRenderer() = default;
 
 // Initializes view parameters when the window size changes.
 void Sample3DSceneRenderer::CreateWindowSizeDependentResources()
@@ -162,16 +247,6 @@ void Sample3DSceneRenderer::Render()
 		0
 	);
 
-	context->UpdateSubresource1(
-		m_timeBuffer.Get(),
-		0,
-		NULL,
-		&m_timeBufferData,
-		0,
-		0,
-		0
-	);
-
 	// Each vertex is one instance of the VertexPositionColor struct.
 	UINT stride = sizeof(VertexPositionColor);
 	UINT offset = 0;
@@ -213,14 +288,6 @@ void Sample3DSceneRenderer::Render()
 		1,
 		1,
 		m_changesOnResizeConstantBuffer.GetAddressOf(),
-		nullptr,
-		nullptr
-	);
-
-	context->VSSetConstantBuffers1(
-		2,
-		1,
-		m_timeBuffer.GetAddressOf(),
 		nullptr,
 		nullptr
 	);
@@ -411,14 +478,10 @@ void Sample3DSceneRenderer::Render()
 
 	context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-	for (const auto& snake : m_snakes)
-	{
-		XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(snake->GetModelMatrix()));
-
-		context->UpdateSubresource1(m_constantBuffer.Get(), 0, NULL, &m_constantBufferData, 0, 0, 0);
-
-		snake->Draw(context);
-	}
+	m_scene->MatrixData.view = m_constantBufferData.view;
+	m_scene->MatrixData.projection = m_constantBufferData.projection;
+	m_scene->TimeData = m_timeBufferData;
+	m_scene->Render(context);
 
 	//Draw the particles using geometry shader
 	//----------------------------------------------------------------------------------------------------------------------------------------------
@@ -694,69 +757,6 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 				&m_modelInputLayout
 			)
 		);
-		auto snakeMaterial = std::make_shared<Material>();
-		snakeMaterial->Initialize(
-			d3dDevice,
-			L"ModelVertexShader.cso",
-			L"ModelPixelShader.cso",
-			L"Assets\\Textures\\Scales2.DDS"
-		);
-
-		std::ifstream fin("Assets/Models/Snake.txt");
-		if (fin.is_open())
-		{
-			char input = ' ';
-			fin.get(input);
-			while (input != ':') { fin.get(input); }
-
-			int count;
-			fin >> count;
-			fin.get(input);
-
-			while (input != ':') { fin.get(input); }
-			fin.get(input); fin.get(input);
-
-			std::vector<VertexPositionTextureNTB> vertices;
-			std::vector<unsigned short> snakeIndices;
-			float x, y, z;
-			VertexPositionTextureNTB vertex;
-
-			for (int i = 0; i < count; i++)
-			{
-				fin >> x >> y >> z; vertex.position = DirectX::XMFLOAT3(x, y, z);
-				fin >> x >> y;      vertex.texture = DirectX::XMFLOAT2(x, y);
-				fin >> x >> y >> z; vertex.normal = DirectX::XMFLOAT3(x, y, z);
-				fin >> x >> y >> z; vertex.tangent = DirectX::XMFLOAT3(x, y, z);
-				fin >> x >> y >> z; vertex.binormal = DirectX::XMFLOAT3(x, y, z);
-				vertices.push_back(vertex);
-				snakeIndices.push_back(i);
-			}
-			fin.close();
-
-			auto leftSnake = std::make_shared<MeshObject>(
-				d3dDevice,
-				vertices.data(),
-				sizeof(VertexPositionTextureNTB),
-				(UINT)vertices.size(),
-				snakeIndices,
-				snakeMaterial
-			);
-			leftSnake->Position = { -1.5f, -4.5f, 0.0f };
-			leftSnake->Scale = { 3.0f, 3.0f, 3.0f };
-			m_snakes.push_back(leftSnake);
-
-			auto rightSnake = std::make_shared<MeshObject>(
-				d3dDevice,
-				vertices.data(),
-				sizeof(VertexPositionTextureNTB),
-				(UINT)vertices.size(),
-				snakeIndices,
-				snakeMaterial
-			);
-			rightSnake->Position = {1.5f, -4.5f, 0.0f };
-			rightSnake->Scale = { 3.0f, 3.0f, 3.0f };
-			m_snakes.push_back(rightSnake);
-		}
 	}
 
 	//Particle Shaders
