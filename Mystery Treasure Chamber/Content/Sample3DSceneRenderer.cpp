@@ -84,7 +84,8 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 			snakeIndices,
 			snakeMaterial
 		);
-		leftSnake->Position = { -1.5f, -4.5f, 0.0f };
+		leftSnake->Position = { -1.5f, -2.5f, 0.0f };
+		leftSnake->Rotation = { -90.f, 0.f, 0.f };
 		leftSnake->Scale = { 3.0f, 3.0f, 3.0f };
 		m_scene->AddMeshObject(leftSnake);
 
@@ -96,7 +97,8 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 			snakeIndices,
 			snakeMaterial
 		);
-		rightSnake->Position = { 1.5f, -4.5f, 0.0f };
+		rightSnake->Position = { 1.5f, -2.5f, 0.0f };
+		rightSnake->Rotation = { -90.f, 0.f, 0.f };
 		rightSnake->Scale = { 3.0f, 3.0f, 3.0f };
 		m_scene->AddMeshObject(rightSnake);
 	}
