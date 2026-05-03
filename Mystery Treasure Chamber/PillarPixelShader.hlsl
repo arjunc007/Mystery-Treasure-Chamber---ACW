@@ -1,8 +1,8 @@
 //The second raymarching pass, which utilises the previous one as texture input
 
-Texture2D txRoom : register(t0);
-Texture2D txTexture : register(t1);
-Texture2D txNormal : register(t2);
+Texture2D txTexture : register(t0);
+Texture2D txNormal : register(t1);
+Texture2D txRoom : register(t2);
 SamplerState txSampler : register(s0);
 
 #define NUMLIGHTS 3

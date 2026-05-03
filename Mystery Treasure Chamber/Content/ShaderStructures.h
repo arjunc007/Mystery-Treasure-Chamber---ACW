@@ -3,6 +3,13 @@
 
 namespace Mystery_Treasure_Chamber
 {
+	enum class VertexFormat
+	{
+		StandardMesh,
+		PositionOnly,
+		Particle
+	};
+
 	struct ConstantBuffer
 	{
 		float time;

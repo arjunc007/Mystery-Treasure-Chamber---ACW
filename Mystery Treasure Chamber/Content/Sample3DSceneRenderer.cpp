@@ -2,7 +2,6 @@
 #include "Sample3DSceneRenderer.h"
 #include "Common\DirectXHelper.h"
 #include "Common\DDSTextureLoader.h"
-#include "MeshObject.h"
 #include "Scene.h"
 //#include "..\Common\BasicShapes.h"
 
@@ -25,107 +24,6 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 
 	m_scene->Initialize(d3dDevice);
 
-	//Set up PS constant buffer
-	m_scene->LightingData.eye = XMFLOAT4(0.0f, 3.5f, 5.0f, 1.0f);
-	m_scene->LightingData.nearPlane = 1.0f;
-	m_scene->LightingData.farPlane = 100.0f;
-	m_scene->LightingData.lightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	m_scene->LightingData.lightPos[0] = XMFLOAT4(-10.0f, 10.0f, -50.0f, 1.0f);
-	m_scene->LightingData.lightPos[1] = XMFLOAT4(10.0f, 10.0f, 50.0f, 1.0f);
-	m_scene->LightingData.lightPos[2] = XMFLOAT4(0.0f, 60.0f, 5.0f, 1.0f);
-	m_scene->LightingData.backgroundColor = XMFLOAT4(0.1f, 0.2f, 0.3f, 1.0f);
-	m_scene->LightingData.padding = XMFLOAT2();
-
-	//Add the floor
-	auto floorMat = std::make_shared<Material>();
-	floorMat->Initialize(d3dDevice, L"VertexShader.cso", L"FloorPixelShader.cso", 
-		L"Assets\\Textures\\Stone_Wall_002_COLOR.DDS",
-		L"Assets\\Textures\\Stone_Wall_002_NRM.DDS",
-		L"HullShader.cso", L"DomainShader.cso", 
-		L"Assets\\Textures\\Stone_Wall_002_DISP.DDS");
-
-	const std::vector<VertexPositionTextureNTB> floorVerts = {
-			{ XMFLOAT3(-1.0f, 0.0f,  1.0f), XMFLOAT2(0, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(-1.0f, 0.0f, -1.0f), XMFLOAT2(0, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(1.0f, 0.0f,  1.0f), XMFLOAT2(1, 1), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(1.0f, 0.0f, -1.0f), XMFLOAT2(1, 0), XMFLOAT3(0.0f, 1.0f, 0.0f), XMFLOAT3(0.0f, 0.0f, 1.0f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-	};
-
-	const std::vector<unsigned short> floorIndices = { 0, 1, 2, 3 };
-	auto floor = std::make_shared<MeshObject>(
-		d3dDevice, floorVerts.data(), sizeof(VertexPositionTextureNTB), floorVerts.size(), floorIndices,
-		floorMat, D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
-	floor->Position = { 0.0f, -2.5f, 0.0f };
-	floor->Scale = { 5.5f, 5.5f, 5.0f };
-	m_scene->AddMeshObject(floor);
-
-	//Add snakes to the scene
-	auto snakeMaterial = std::make_shared<Material>();
-	snakeMaterial->Initialize(
-		d3dDevice,
-		L"ModelVertexShader.cso",
-		L"ModelPixelShader.cso",
-		L"Assets\\Textures\\Scales2.DDS"
-	);
-
-	std::ifstream fin("Assets/Models/Snake.txt");
-	if (fin.is_open())
-	{
-		char input = ' ';
-		fin.get(input);
-		while (input != ':') { fin.get(input); }
-
-		int count;
-		fin >> count;
-		fin.get(input);
-
-		while (input != ':') { fin.get(input); }
-		fin.get(input); fin.get(input);
-
-		std::vector<VertexPositionTextureNTB> vertices;
-		std::vector<unsigned short> snakeIndices;
-		float x, y, z;
-		VertexPositionTextureNTB vertex;
-
-		for (int i = 0; i < count; i++)
-		{
-			fin >> x >> y >> z; vertex.position = DirectX::XMFLOAT3(x, y, z);
-			fin >> x >> y;      vertex.texture = DirectX::XMFLOAT2(x, y);
-			fin >> x >> y >> z; vertex.normal = DirectX::XMFLOAT3(x, y, z);
-			fin >> x >> y >> z; vertex.tangent = DirectX::XMFLOAT3(x, y, z);
-			fin >> x >> y >> z; vertex.binormal = DirectX::XMFLOAT3(x, y, z);
-			vertices.push_back(vertex);
-			snakeIndices.push_back(i);
-		}
-		fin.close();
-
-		auto leftSnake = std::make_shared<MeshObject>(
-			d3dDevice,
-			vertices.data(),
-			sizeof(VertexPositionTextureNTB),
-			(UINT)vertices.size(),
-			snakeIndices,
-			snakeMaterial
-		);
-		leftSnake->Position = { -1.5f, -2.5f, 0.0f };
-		leftSnake->Rotation = { -90.f, 0.f, 0.f };
-		leftSnake->Scale = { 3.0f, 3.0f, 3.0f };
-		m_scene->AddMeshObject(leftSnake);
-
-		auto rightSnake = std::make_shared<MeshObject>(
-			d3dDevice,
-			vertices.data(),
-			sizeof(VertexPositionTextureNTB),
-			(UINT)vertices.size(),
-			snakeIndices,
-			snakeMaterial
-		);
-		rightSnake->Position = { 1.5f, -2.5f, 0.0f };
-		rightSnake->Rotation = { -90.f, 0.f, 0.f };
-		rightSnake->Scale = { 3.0f, 3.0f, 3.0f };
-		m_scene->AddMeshObject(rightSnake);
-	}
-
 	CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();
 }
@@ -135,324 +33,53 @@ Sample3DSceneRenderer::~Sample3DSceneRenderer() = default;
 // Initializes view parameters when the window size changes.
 void Sample3DSceneRenderer::CreateWindowSizeDependentResources()
 {
-	float width = static_cast<float>(m_deviceResources->GetOutputWidth());
-	float height = static_cast<float>(m_deviceResources->GetOutputHeight()); 
-	float aspectRatio = width / height;
-	float fovAngleY = 70.0f * XM_PI / 180.0f;
-
-	m_changesOnResizeConstantBufferData.height = height;
-	m_changesOnResizeConstantBufferData.width = width;
-
-	// This is a simple example of change that can be made when the app is in
-	// portrait or snapped view.
-	if (aspectRatio < 1.0f)
-	{
-		fovAngleY *= 2.0f;
-	}
-
-	// Note that the OrientationTransform3D matrix is post-multiplied here
-	// in order to correctly orient the scene to match the display orientation.
-	// This post-multiplication step is required for any draw calls that are
-	// made to the swap chain render target. For draw calls to other targets,
-	// this transform should not be applied.
-
-	// This sample makes use of a right-handed coordinate system using row-major matrices.
-	XMMATRIX perspectiveMatrix = XMMatrixPerspectiveFovRH(
-		fovAngleY,
-		aspectRatio,
-		0.01f,
-		100.0f
-	);
-
-	XMMATRIX orientationMatrix = XMMatrixIdentity();
-
-	XMStoreFloat4x4(
-		&m_constantBufferData.projection,
-		XMMatrixTranspose(perspectiveMatrix * orientationMatrix)
-	);
-
-	// Eye is at (0,0.7,1.5), looking at point (0,-0.1,0) with the up-vector along the y-axis.
-	static const XMVECTORF32 eye = { 0.0f, 3.5f, 5.0f, 0.0f };
-	static const XMVECTORF32 at = { 0.0f, -0.1f, 0.0f, 0.0f };
-	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
-
-	XMStoreFloat4x4(&m_constantBufferData.view, XMMatrixTranspose(XMMatrixLookAtRH(eye, at, up)));
-
-	D3D11_TEXTURE2D_DESC textureDesc;
-	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
-
-	// Initialize the render target texture description.
-	ZeroMemory(&textureDesc, sizeof(textureDesc));
-
-	// Setup the render target texture description.
-	textureDesc.Width = m_deviceResources->GetOutputWidth();
-	textureDesc.Height = m_deviceResources->GetOutputHeight();
-	textureDesc.MipLevels = 1;
-	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.Usage = D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.CPUAccessFlags = 0;
-	textureDesc.MiscFlags = 0;
-
-	// Create the render target texture.
-	DX::ThrowIfFailed(
-		m_deviceResources->GetD3DDevice()->CreateTexture2D(&textureDesc, NULL, &m_renderTargetTexture)
-	);
-
-	// Setup the description of the render target view.
-	renderTargetViewDesc.Format = textureDesc.Format;
-	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	renderTargetViewDesc.Texture2D.MipSlice = 0;
-
-	// Create the render target view.
-	DX::ThrowIfFailed(
-		m_deviceResources->GetD3DDevice()->CreateRenderTargetView(m_renderTargetTexture.Get(), &renderTargetViewDesc, m_renderTargetView.GetAddressOf())
-	);
-
-	// Setup the description of the shader resource view.
-	shaderResourceViewDesc.Format = textureDesc.Format;
-	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
-	shaderResourceViewDesc.Texture2D.MipLevels = 1;
-
-	// Create the shader resource view.
-	DX::ThrowIfFailed(
-		m_deviceResources->GetD3DDevice()->CreateShaderResourceView(m_renderTargetTexture.Get(), &shaderResourceViewDesc, &m_shaderResourceView)
-	);
+	m_scene->CreateRoomRenderTarget(m_deviceResources->GetD3DDevice(), m_deviceResources->GetOutputWidth(), m_deviceResources->GetOutputHeight());
 }
 
 // Called once per frame, rotates the cube and calculates the model and view matrices.
 void Sample3DSceneRenderer::Update(DX::StepTimer const& timer)
-{
-	m_timeBufferData.time = static_cast<float>(timer.GetTotalSeconds());
-	m_timeBufferData.deltaTime =static_cast<float>(timer.GetElapsedSeconds());
-}
-
-// Rotate the 3D cube model a set amount of radians.
-void Sample3DSceneRenderer::Rotate(float radians)
-{
-	// Prepare to pass the updated model matrix to the shader
-	XMStoreFloat4x4(&m_constantBufferData.model, XMMatrixTranspose(XMMatrixRotationY(radians)));
+{	
+	m_scene->Update(timer);
 }
 
 // Renders one frame using the vertex and pixel shaders.
 void Sample3DSceneRenderer::Render()
 {
-	// Loading is asynchronous. Only draw geometry after it's loaded.
-	if (!m_loadingComplete)
-	{
-		return;
-	}
-
 	auto context = m_deviceResources->GetD3DDeviceContext();
 
 //First, draw the room using ray marching
 //----------------------------------------------------------------------------------------------------------------------------------------------
-	// Prepare the constant buffer to send it to the graphics device.
-	context->UpdateSubresource1(
-		m_constantBuffer.Get(),
-		0,
-		NULL,
-		&m_constantBufferData,
-		0,
-		0,
-		0
-	);
 
-	context->UpdateSubresource1(
-		m_changesOnResizeConstantBuffer.Get(),
-		0,
-		NULL,
-		&m_changesOnResizeConstantBufferData,
-		0,
-		0,
-		0
-	);
-
-	// Each vertex is one instance of the VertexPositionColor struct.
-	UINT stride = sizeof(VertexPositionColor);
-	UINT offset = 0;
-	context->IASetVertexBuffers(
-		0,
-		1,
-		m_cubeVertexBuffer.GetAddressOf(),
-		&stride,
-		&offset
-	);
-
-	context->IASetIndexBuffer(
-		m_indexBuffer.Get(),
-		DXGI_FORMAT_R16_UINT, // Each index is one 16-bit unsigned integer (short).
-		0
-	);
-
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	context->IASetInputLayout(m_inputLayout.Get());
-
-	// Attach our vertex shader.
-	context->VSSetShader(
-		m_canvasVertexShader.Get(),
-		nullptr,
-		0
-	);
-
-	// Send the constant buffer to the graphics device.
-	context->VSSetConstantBuffers1(
-		0,
-		1,
-		m_constantBuffer.GetAddressOf(),
-		nullptr,
-		nullptr
-	);
-
-	context->VSSetConstantBuffers1(
-		1,
-		1,
-		m_changesOnResizeConstantBuffer.GetAddressOf(),
-		nullptr,
-		nullptr
-	);
-
-	// Attach our pixel shader.
-	context->PSSetShader(
-		m_roomPixelShader.Get(),
-		nullptr,
-		0
-	);
-
-	context->UpdateSubresource1(
-		m_psConstantBuffer.Get(),
-		0,
-		NULL,
-		&m_psConstantBufferData,
-		0,
-		0,
-		0
-	);
-
-	context->PSSetConstantBuffers1(
-		0,
-		1,
-		m_psConstantBuffer.GetAddressOf(),
-		nullptr,
-		nullptr
-	);
-
-	context->PSSetShaderResources(0, 1, m_wallTexture.GetAddressOf());
-	context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
-
-	context->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_deviceResources->GetDepthStencilView());
 	// Draw the objects.
-	context->DrawIndexed(
-		m_indexCount,
-		0,
-		0
-	);
 
 //Second, draw the tessellated floor after the room walls.
 //----------------------------------------------------------------------------------------------------------------------------------------------
 	//Clear depth buffer
-	context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-	context->UpdateSubresource1(
-		m_constantBuffer.Get(),
-		0,
-		NULL,
-		&m_constantBufferData,
-		0,
-		0,
-		0
-	);
-
-	context->DSSetConstantBuffers1(
-		0,
-		1,
-		m_constantBuffer.GetAddressOf(),
-		nullptr,
-		nullptr
-	);
+	
 
 	//context->RSSetState(m_cullFrontState.Get());
 
 	//Draw the quad
 
-	context->RSSetState(nullptr);
-
-	context->HSSetShader(nullptr,
-		nullptr, 0);
-
-	context->DSSetShader(nullptr,
-		nullptr,
-		0);
-
 	// Reset render targets to the screen.
-	ID3D11RenderTargetView *const targets[1] = { m_deviceResources->GetBackBufferRenderTargetView() };
-	context->OMSetRenderTargets(1, targets, m_deviceResources->GetDepthStencilView());
+
+	m_scene->Render(context);
 
 //Third, draw the pillars on top of the floor using ray marching
 //----------------------------------------------------------------------------------------------------------------------------------------------
 
-	// Each vertex is one instance of the VertexPositionColor struct.
-	stride = sizeof(VertexPositionColor);
-	offset = 0;
-	context->IASetVertexBuffers(
-		0,
-		1,
-		m_cubeVertexBuffer.GetAddressOf(),
-		&stride,
-		&offset
-	);
-
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	context->IASetInputLayout(m_inputLayout.Get());
-
-	// Attach our vertex shader.
-	context->VSSetShader(
-		m_canvasVertexShader.Get(),
-		nullptr,
-		0
-	);
-
-	context->PSSetShaderResources(0, 1, m_shaderResourceView.GetAddressOf());
-	context->PSSetShaderResources(1, 1, m_wallTexture.GetAddressOf());
-	context->PSSetShaderResources(2, 1, m_wallHeightTexture.GetAddressOf());
-	context->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
-
-	// Attach our pixel shader.
-	context->PSSetShader(
-		m_pillarPixelShader.Get(),
-		nullptr,
-		0
-	);
-
-	// Draw the objects.
-	context->DrawIndexed(
-		m_indexCount,
-		0,
-		0
-	);
-
 //Draw explicit models from vertex buffers
 //----------------------------------------------------------------------------------------------------------------------------------------------
 
-	context->ClearDepthStencilView(m_deviceResources->GetDepthStencilView(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-	m_scene->MatrixData.view = m_constantBufferData.view;
-	m_scene->MatrixData.projection = m_constantBufferData.projection;
-	m_scene->TimeData = m_timeBufferData;
-	m_scene->Render(context);
+	
+	
 
 	//Draw the particles using geometry shader
 	//----------------------------------------------------------------------------------------------------------------------------------------------
-
+	/*
 	// Each vertex is one instance of the VertexPositionColor struct.
-	stride = sizeof(Particle);
-	offset = 0;
+	const UINT stride = sizeof(Particle);
+	const UINT offset = 0;
 	context->IASetVertexBuffers(
 		0,
 		1,
@@ -582,7 +209,7 @@ void Sample3DSceneRenderer::Render()
 		nullptr,
 		nullptr,
 		0
-	);
+	);*/
 }
 
 void Sample3DSceneRenderer::CreateDeviceDependentResources()
@@ -590,140 +217,21 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 	auto d3dDevice = m_deviceResources->GetD3DDevice();
 	
 	//Canvas vertex shader & input layout
-	{
-		auto fileData = DX::ReadData(L"SampleVertexShader.cso");
-		DX::ThrowIfFailed(d3dDevice->CreateVertexShader(fileData.data(), fileData.size(), nullptr, &m_canvasVertexShader));
-
-		static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		};
-
-		DX::ThrowIfFailed(
-			d3dDevice->CreateInputLayout(
-				vertexDesc,
-				ARRAYSIZE(vertexDesc),
-				fileData.data(),
-				fileData.size(),
-				&m_inputLayout
-			)
-		);
-
-		D3D11_SAMPLER_DESC samplerDesc;
-		//Create texture sampler state description
-		ZeroMemory(&samplerDesc, sizeof(samplerDesc));
-		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-		samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-		samplerDesc.MinLOD = 0;
-		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
-		//Create texture sampler state
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateSamplerState(&samplerDesc, &m_samplerState)
-		);
-	}
+	//{
+	//	auto fileData = DX::ReadData(L"SampleVertexShader.cso");
+	//	DX::ThrowIfFailed(d3dDevice->CreateVertexShader(fileData.data(), fileData.size(), nullptr, &m_canvasVertexShader));
+	//}
 
 	//Room pixel shader and constant buffers
 	{
-		auto fileData = DX::ReadData(L"RoomPixelShader.cso");
-		DX::ThrowIfFailed(
-			d3dDevice->CreatePixelShader(
-				fileData.data(),
-				fileData.size(),
-				nullptr,
-				&m_roomPixelShader
-			)
-		);
-
-		CD3D11_BUFFER_DESC constantBufferDesc(sizeof(ModelViewProjectionConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBuffer(
-				&constantBufferDesc,
-				nullptr,
-				&m_constantBuffer
-			)
-		);
-
-		CD3D11_BUFFER_DESC changesOnResizeConstantBufferDesc(sizeof(ChangesOnResizeConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBuffer(
-				&changesOnResizeConstantBufferDesc,
-				nullptr,
-				&m_changesOnResizeConstantBuffer
-			)
-		);
-
-		CD3D11_BUFFER_DESC psConstantBufferDesc(sizeof(PixelShaderConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBuffer(
-				&psConstantBufferDesc,
-				nullptr,
-				&m_psConstantBuffer
-			)
-		);
-
-		CD3D11_BUFFER_DESC timeBufferDesc(sizeof(ConstantBuffer), D3D11_BIND_CONSTANT_BUFFER);
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreateBuffer(
-				&timeBufferDesc,
-				nullptr,
-				&m_timeBuffer
-			)
-		);
 	}
 
 	//Pillar pixel shader
-	{
-		auto fileData = DX::ReadData(L"PillarPixelShader.cso");
-		DX::ThrowIfFailed(
-			m_deviceResources->GetD3DDevice()->CreatePixelShader(
-				&fileData[0],
-				fileData.size(),
-				nullptr,
-				&m_pillarPixelShader
-			)
-		);
-	}
-	
-	m_psConstantBufferData.eye = XMFLOAT4(0.0f, 3.5f, 5.0f, 1.0f);
-	m_psConstantBufferData.nearPlane = 1.0f;
-	m_psConstantBufferData.farPlane = 100.0f;
-	m_psConstantBufferData.lightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	m_psConstantBufferData.lightPos[0] = XMFLOAT4(-10.0f, 10.0f, -50.0f, 1.0f);
-	m_psConstantBufferData.lightPos[1] = XMFLOAT4(10.0f, 10.0f, 50.0f, 1.0f);
-	m_psConstantBufferData.lightPos[2] = XMFLOAT4(0.0f, 60.0f, 5.0f, 1.0f);
-	m_psConstantBufferData.backgroundColor = XMFLOAT4(0.1f, 0.2f, 0.3f, 1.0f);
-	m_psConstantBufferData.padding = XMFLOAT2();
 	
 	//Model Shaders
-	{
-		auto vsData = DX::ReadData(L"ModelVertexShader.cso");
-
-		static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
-		{
-			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		};
-
-		DX::ThrowIfFailed(
-			d3dDevice->CreateInputLayout(
-				vertexDesc,
-				ARRAYSIZE(vertexDesc),
-				vsData.data(),
-				vsData.size(),
-				&m_modelInputLayout
-			)
-		);
-	}
 
 	//Particle Shaders
+	/*
 	{
 		auto vsData = DX::ReadData(L"ParticleVertexShader.cso");
 		DX::ThrowIfFailed(d3dDevice->CreateVertexShader(vsData.data(), vsData.size(), nullptr, &m_particleVertexShader));
@@ -755,7 +263,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 			{ 0, "TEXCOORD", 3, 0, 1, 0 },
 		};
 		DX::ThrowIfFailed(d3dDevice->CreateGeometryShaderWithStreamOutput(gsSOData.data(), gsSOData.size(), pDecl, ARRAYSIZE(pDecl), NULL, 0, D3D11_SO_NO_RASTERIZED_STREAM, nullptr, &m_particleGeometryShaderSO));
-	}
+	}*/
 
 	//Blending and render states
 	{
@@ -787,50 +295,16 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 
 	//Textures
 	{
-		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\StoneWall_1024_albedo.DDS", nullptr, &m_wallTexture));
-		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\StoneWall_1024_normal.DDS", nullptr, &m_wallHeightTexture));
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\fire.DDS", nullptr, &m_fireTexture));
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\noise.DDS", nullptr, &m_noiseTexture));
 	}
 
 	//Cube Geometry
-	{
-		static const VertexPositionColor cubeVertices[] = {
-			{ XMFLOAT3(-0.5f, -0.5f, -0.5f), XMFLOAT3(0.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(-0.5f, -0.5f,  0.5f), XMFLOAT3(0.0f, 0.0f, 1.0f) },
-			{ XMFLOAT3(-0.5f,  0.5f, -0.5f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-			{ XMFLOAT3(-0.5f,  0.5f,  0.5f), XMFLOAT3(0.0f, 1.0f, 1.0f) },
-			{ XMFLOAT3(0.5f, -0.5f, -0.5f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-			{ XMFLOAT3(0.5f, -0.5f,  0.5f), XMFLOAT3(1.0f, 0.0f, 1.0f) },
-			{ XMFLOAT3(0.5f,  0.5f, -0.5f), XMFLOAT3(1.0f, 1.0f, 0.0f) },
-			{ XMFLOAT3(0.5f,  0.5f,  0.5f), XMFLOAT3(1.0f, 1.0f, 1.0f) },
-		};
-
-		D3D11_SUBRESOURCE_DATA vertexBufferData = { 0 };
-		vertexBufferData.pSysMem = cubeVertices;
-		CD3D11_BUFFER_DESC vertexBufferDesc(sizeof(cubeVertices), D3D11_BIND_VERTEX_BUFFER);
-		DX::ThrowIfFailed(d3dDevice->CreateBuffer(&vertexBufferDesc, &vertexBufferData, &m_cubeVertexBuffer));
-
-		static const unsigned short cubeIndices[] = {
-			0,2,1, 1,2,3,
-			4,5,6, 5,7,6,
-			0,1,5, 0,5,4,
-			2,6,7, 2,7,3,
-			0,4,6, 0,6,2,
-			1,3,7, 1,7,5,
-		};
-		m_indexCount = ARRAYSIZE(cubeIndices);
-
-		D3D11_SUBRESOURCE_DATA indexBufferData = { 0 };
-		indexBufferData.pSysMem = cubeIndices;
-		CD3D11_BUFFER_DESC indexBufferDesc(sizeof(cubeIndices), D3D11_BIND_INDEX_BUFFER);
-		DX::ThrowIfFailed(d3dDevice->CreateBuffer(&indexBufferDesc, &indexBufferData, &m_indexBuffer));
-	}
-
 	//Quad Geometry
 	//Snake geometry
 
 	//Particles
+	/*
 	{
 		m_maxParticles = 1000;
 
@@ -851,6 +325,7 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		// For the Stream Output buffer, we don't pass initial data (pass nullptr)
 		DX::ThrowIfFailed(d3dDevice->CreateBuffer(&vertexBufferDesc, nullptr, &m_particleVertexBufferSO));
 	}
+	*/
 
 	m_loadingComplete = true;
 }

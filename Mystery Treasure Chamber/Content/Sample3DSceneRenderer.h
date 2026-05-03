@@ -21,10 +21,6 @@ namespace Mystery_Treasure_Chamber
 		void Update(DX::StepTimer const& timer);
 		void Render();
 
-
-	private:
-		void Rotate(float radians);
-
 	private:
 		// Cached pointer to device resources.
 		std::shared_ptr<DX::DeviceResources> m_deviceResources;

@@ -1,4 +1,5 @@
 #pragma once
+#include "Content/ShaderStructures.h"
 #include <d3d11.h>
 #include <wrl/client.h>
 #include <string>
@@ -14,6 +15,7 @@ public:
 		const std::wstring& vertexShaderPath,
 		const std::wstring& pixelShaderPath,
 		const std::wstring& diffusePath,
+		const Mystery_Treasure_Chamber::VertexFormat format = Mystery_Treasure_Chamber::VertexFormat::StandardMesh,
 		const std::wstring& normalPath = L"",
 		const std::wstring& hullShaderPath = L"",
 		const std::wstring& domainShaderPath = L"",

@@ -5,11 +5,6 @@
 
 std::vector<char> Material::ReadCompiledShader(const std::wstring& filename)
 {
-	/*if (filename.empty())
-	{
-		return {};
-	}*/
-
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 	if (!file.is_open())
 	{
@@ -28,6 +23,7 @@ std::vector<char> Material::ReadCompiledShader(const std::wstring& filename)
 bool Material::Initialize(ID3D11Device* device, const std::wstring& vsPath, 
 						const std::wstring& psPath, 
 						const std::wstring& texturePath,
+						const Mystery_Treasure_Chamber::VertexFormat format,
 						const std::wstring& normalPath,
 						const std::wstring& hsPath,
 						const std::wstring& dsPath,
@@ -41,7 +37,9 @@ bool Material::Initialize(ID3D11Device* device, const std::wstring& vsPath,
 
 	device->CreateVertexShader(vsData.data(), vsData.size(), nullptr, m_vertexShader.GetAddressOf());
 
-	static const D3D11_INPUT_ELEMENT_DESC layoutDesc[] =
+	if (format == Mystery_Treasure_Chamber::VertexFormat::StandardMesh)
+	{
+		static const D3D11_INPUT_ELEMENT_DESC layoutDesc[] =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -49,7 +47,20 @@ bool Material::Initialize(ID3D11Device* device, const std::wstring& vsPath,
 			{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
-	device->CreateInputLayout(layoutDesc, ARRAYSIZE(layoutDesc), vsData.data(), vsData.size(), m_inputLayout.GetAddressOf());
+		device->CreateInputLayout(layoutDesc, ARRAYSIZE(layoutDesc), vsData.data(), vsData.size(), m_inputLayout.GetAddressOf());
+	}
+	else if (format == Mystery_Treasure_Chamber::VertexFormat::PositionOnly)
+	{
+		static const D3D11_INPUT_ELEMENT_DESC vertexDesc[] =
+		{
+			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+			{ "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		};
+
+		DX::ThrowIfFailed(
+			device->CreateInputLayout(vertexDesc, ARRAYSIZE(vertexDesc), vsData.data(), vsData.size(), m_inputLayout.GetAddressOf())
+		);
+	}
 
 	auto psData = ReadCompiledShader(psPath);
 	if (psData.empty())
