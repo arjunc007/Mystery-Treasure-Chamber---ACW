@@ -57,6 +57,7 @@ namespace Mystery_Treasure_Chamber
 		float nearPlane;
 		float farPlane;
 		DirectX::XMFLOAT2 padding;
+		DirectX::XMFLOAT4X4 ViewProjection;
 	};
 
 	struct Particle {

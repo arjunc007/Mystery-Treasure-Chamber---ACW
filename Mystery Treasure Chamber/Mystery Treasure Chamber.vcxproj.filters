@@ -220,6 +220,9 @@
     <FxCompile Include="Content\SampleVertexShader.hlsl">
       <Filter>Resource Files\Content</Filter>
     </FxCompile>
+    <FxCompile Include="PillarVertexShader.hlsl">
+      <Filter>Resource Files\Content</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Assets\Models\Snake.txt" />

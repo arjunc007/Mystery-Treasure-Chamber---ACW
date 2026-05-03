@@ -36,6 +36,20 @@ bool Scene::Initialize(ID3D11Device* device)
     timeBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     if (FAILED(device->CreateBuffer(&timeBufferDesc, nullptr, m_timeConstantBuffer.GetAddressOf()))) return false;
 
+	D3D11_DEPTH_STENCIL_DESC depthEnabledDesc = {};
+	depthEnabledDesc.DepthEnable = TRUE;
+	depthEnabledDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL; // Write is ON
+	depthEnabledDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+	if (FAILED(device->CreateDepthStencilState(&depthEnabledDesc, m_defaultDepthState.GetAddressOf()))) return false;
+
+	D3D11_DEPTH_STENCIL_DESC depthDesc;
+	ZeroMemory(&depthDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
+	depthDesc.DepthEnable = TRUE;
+	depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+	depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	if (FAILED(device->CreateDepthStencilState(&depthDesc, m_depthWriteOffState.GetAddressOf()))) return false;
+
 	SetupSceneObjects();
 
 	return true;
@@ -81,58 +95,15 @@ bool Scene::CreateRoomRenderTarget(ID3D11Device* device, UINT in_width, UINT in_
 	);
 
 	// Eye is at (0,0.7,1.5), looking at point (0,-0.1,0) with the up-vector along the y-axis.
-	static const XMVECTORF32 eye = { 0.0f, 3.5f, 5.0f, 0.0f };
+	static const XMVECTORF32 eye = { 0.0f, 3.5f, 5.0f, 1.0f };
 	static const XMVECTORF32 at = { 0.0f, -0.1f, 0.0f, 0.0f };
 	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
 
 	XMStoreFloat4x4(&MatrixData.view, XMMatrixTranspose(XMMatrixLookAtRH(eye, at, up)));
 
-	D3D11_TEXTURE2D_DESC textureDesc;
-	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
+	XMStoreFloat4x4(&LightingData.ViewProjection, XMMatrixTranspose(XMMatrixMultiply(XMMatrixLookAtRH(eye, at, up), perspectiveMatrix * orientationMatrix)));
 
-	// Initialize the render target texture description.
-	ZeroMemory(&textureDesc, sizeof(textureDesc));
-
-	// Setup the render target texture description.
-	textureDesc.Width = width;
-	textureDesc.Height = height;
-	textureDesc.MipLevels = 1;
-	textureDesc.ArraySize = 1;
-	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	textureDesc.SampleDesc.Count = 1;
-	textureDesc.Usage = D3D11_USAGE_DEFAULT;
-	textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	textureDesc.CPUAccessFlags = 0;
-	textureDesc.MiscFlags = 0;
-
-	// Create the render target texture.
-	hr = device->CreateTexture2D(&textureDesc, NULL, &m_roomTexture);
-	if (FAILED(hr))
-	{
-		return false;
-	}
-
-	// Setup the description of the render target view.
-	renderTargetViewDesc.Format = textureDesc.Format;
-	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	renderTargetViewDesc.Texture2D.MipSlice = 0;
-
-	// Create the render target view.
-	hr = device->CreateRenderTargetView(m_roomTexture.Get(), &renderTargetViewDesc, m_roomRTV.GetAddressOf());
-	if (FAILED(hr))
-	{
-		return false;
-	}
-
-	// Setup the description of the shader resource view.
-	shaderResourceViewDesc.Format = textureDesc.Format;
-	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
-	shaderResourceViewDesc.Texture2D.MipLevels = 1;
-
-	// Create the shader resource view.
-	hr = device->CreateShaderResourceView(m_roomTexture.Get(), &shaderResourceViewDesc, m_roomSRV.GetAddressOf());
+	return true;
 }
 
 void Scene::SetupSceneObjects()
@@ -204,12 +175,12 @@ void Scene::SetupSceneObjects()
 		floorMat, D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
 	floor->Position = { 0.0f, -2.5f, 0.0f };
 	floor->Scale = { 5.5f, 5.5f, 5.0f };
-	AddBackgroundObject(floor);
+	m_floor = floor;// AddBackgroundObject(floor);
 
 	//Add raymarched pillars as mesh objects
 	auto pillarMat = std::make_shared < Material>();
 	pillarMat->Initialize(m_d3dDevice.Get(),
-		L"SampleVertexShader.cso",
+		L"PillarVertexShader.cso",
 		L"PillarPixelShader.cso",
 		L"Assets\\Textures\\StoneWall_1024_albedo.DDS",
 		VertexFormat::PositionOnly,
@@ -218,6 +189,8 @@ void Scene::SetupSceneObjects()
 	auto pillars = std::make_shared<MeshObject>(
 		m_d3dDevice.Get(),
 		cubeVertices.data(), sizeof(VertexPositionColor), cubeVertices.size(), cubeIndices, pillarMat);
+	pillars->Scale = { 5.5f, 5.5, 5.5f };
+	pillars->Position = { 0.f, 0.f, 0.f };
 	AddMeshObject(pillars);
 
 	//Add snakes to the scene
@@ -320,10 +293,7 @@ void Scene::Render(ID3D11DeviceContext* context)
 	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> mainDSV;
 	context->OMGetRenderTargets(1, mainRTV.GetAddressOf(), mainDSV.GetAddressOf());
 
-	ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-	context->PSSetShaderResources(2, 1, nullSRV);
-
-	context->OMSetRenderTargets(1, m_roomRTV.GetAddressOf(), mainDSV.Get());
+	context->OMSetDepthStencilState(m_depthWriteOffState.Get(), 0);
 
 	for (const auto& bg : m_backgroundObjects)
 	{
@@ -335,24 +305,21 @@ void Scene::Render(ID3D11DeviceContext* context)
 		context->VSSetConstantBuffers(0, 1, m_mvpConstantBuffer.GetAddressOf());
 
 		bg->Draw(context);
-
-		context->ClearDepthStencilView(mainDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
 
-	context->OMSetRenderTargets(1, mainRTV.GetAddressOf(), mainDSV.Get());
-	context->ClearDepthStencilView(mainDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-	context->PSSetShaderResources(2, 1, m_roomSRV.GetAddressOf());
+	context->OMSetDepthStencilState(m_defaultDepthState.Get(), 0);
 
-	//Pillars
-	//{
-	//	DirectX::XMStoreFloat4x4(&MatrixData.model, DirectX::XMMatrixTranspose(m_pillars->GetModelMatrix()));
+	//Floor
+	{
+		// Update ONLY the model matrix inside your existing MatrixData struct
+		DirectX::XMStoreFloat4x4(&MatrixData.model, DirectX::XMMatrixTranspose(m_floor->GetModelMatrix()));
 
-	//	// Upload the entire MVP struct to the GPU
-	//	context->UpdateSubresource(m_mvpConstantBuffer.Get(), 0, nullptr, &MatrixData, 0, 0);
-	//	context->VSSetConstantBuffers(0, 1, m_mvpConstantBuffer.GetAddressOf());
+		// Upload the entire MVP struct to the GPU
+		context->UpdateSubresource(m_mvpConstantBuffer.Get(), 0, nullptr, &MatrixData, 0, 0);
+		context->VSSetConstantBuffers(0, 1, m_mvpConstantBuffer.GetAddressOf());
 
-	//	m_pillars->Draw(context);
-	//}
+		m_floor->Draw(context);
+	}
 
     for (const auto& obj : m_meshObjects)
     {
@@ -365,7 +332,5 @@ void Scene::Render(ID3D11DeviceContext* context)
         context->DSSetConstantBuffers(0, 1, m_mvpConstantBuffer.GetAddressOf());
 
         obj->Draw(context);
-
-		context->ClearDepthStencilView(mainDSV.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
     }
 }

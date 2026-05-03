@@ -215,20 +215,6 @@ void Sample3DSceneRenderer::Render()
 void Sample3DSceneRenderer::CreateDeviceDependentResources()
 {
 	auto d3dDevice = m_deviceResources->GetD3DDevice();
-	
-	//Canvas vertex shader & input layout
-	//{
-	//	auto fileData = DX::ReadData(L"SampleVertexShader.cso");
-	//	DX::ThrowIfFailed(d3dDevice->CreateVertexShader(fileData.data(), fileData.size(), nullptr, &m_canvasVertexShader));
-	//}
-
-	//Room pixel shader and constant buffers
-	{
-	}
-
-	//Pillar pixel shader
-	
-	//Model Shaders
 
 	//Particle Shaders
 	/*
@@ -280,13 +266,6 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		additiveBlendDesc.RenderTarget[0].RenderTargetWriteMask = 0x0f;
 		DX::ThrowIfFailed(d3dDevice->CreateBlendState(&additiveBlendDesc, &m_additiveBlend));
 
-		D3D11_DEPTH_STENCIL_DESC depthDesc;
-		ZeroMemory(&depthDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
-		depthDesc.DepthEnable = TRUE;
-		depthDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
-		depthDesc.DepthFunc = D3D11_COMPARISON_LESS;
-		DX::ThrowIfFailed(d3dDevice->CreateDepthStencilState(&depthDesc, &m_noWriteDepthState));
-
 		D3D11_RASTERIZER_DESC cullDesc;
 		cullDesc.FillMode = D3D11_FILL_SOLID;
 		cullDesc.CullMode = D3D11_CULL_BACK;
@@ -298,10 +277,6 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\fire.DDS", nullptr, &m_fireTexture));
 		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\noise.DDS", nullptr, &m_noiseTexture));
 	}
-
-	//Cube Geometry
-	//Quad Geometry
-	//Snake geometry
 
 	//Particles
 	/*

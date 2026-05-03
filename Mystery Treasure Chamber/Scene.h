@@ -31,9 +31,7 @@ private:
 
 	std::vector<std::shared_ptr<SceneObject>> m_backgroundObjects;
 	std::vector<std::shared_ptr<SceneObject>> m_meshObjects;
-	std::shared_ptr<SceneObject> m_room;
 	std::shared_ptr<SceneObject> m_floor;
-	std::shared_ptr<SceneObject> m_pillars;
 
 	Microsoft::WRL::ComPtr<ID3D11Device> m_d3dDevice;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_mvpConstantBuffer;
@@ -41,8 +39,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_sizeConstantBuffer;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_timeConstantBuffer;
 
-	Microsoft::WRL::ComPtr<ID3D11Texture2D>          m_roomTexture;
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>   m_roomRTV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_roomSRV;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>	m_defaultDepthState;
+	Microsoft::WRL::ComPtr<ID3D11DepthStencilState>	m_depthWriteOffState;
 };
 

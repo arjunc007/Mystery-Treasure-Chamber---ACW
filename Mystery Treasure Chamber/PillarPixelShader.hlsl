@@ -2,7 +2,6 @@
 
 Texture2D txTexture : register(t0);
 Texture2D txNormal : register(t1);
-Texture2D txRoom : register(t2);
 SamplerState txSampler : register(s0);
 
 #define NUMLIGHTS 3
@@ -29,13 +28,14 @@ static const float3 AxisZ = float3 (0.0, 0.0, 1.0);
 
 cbuffer PixelShaderConstantBuffer : register(b0)
 {
-float4 Eye;
-float4 LightColor;
-float4 backgroundColor;
-float4 LightPos[3];
-float nearPlane;
-float farPlane;
-float2 padding;
+	float4 Eye;
+	float4 LightColor;
+	float4 backgroundColor;
+	float4 LightPos[3];
+	float nearPlane;
+	float farPlane;
+	float2 padding;
+    matrix ViewProjection;
 };
 
 struct Ray
@@ -44,12 +44,17 @@ struct Ray
 	float3 d;	//direction
 };
 
-//Canvas
-struct VS_Canvas
+struct PS_INPUT
 {
-	float4 Position : SV_POSITION;	//vertex position
-	float2 canvasXY : TEXCOORD0;	//vertex texture coordinates
-	float2 tex : TEXCOORD1;
+    float4 Position : SV_POSITION; // Screen position (used by rasterizer)
+    float3 WorldPos : POSITION; // 3D position on the proxy cube's surface
+    float2 tex : TEXCOORD1;
+};
+
+struct PS_OUTPUT
+{
+    float4 Color : SV_TARGET;
+    float Depth : SV_DEPTH;
 };
 
 //------------------------------------------------------------------------------------------------------------------
@@ -272,9 +277,9 @@ float4 Shade(float3 Position, float3 normal, float3 viewDir, float3 color)
 	return saturate(LightColor * output);
 }
 
-float4 RayMarching(Ray ray, float2 tex)
+PS_OUTPUT RayMarching(Ray ray, float2 tex)
 {
-	float4 result = (float4)0;
+    PS_OUTPUT output;
 	float start, final;
 	float t;
 	
@@ -299,28 +304,27 @@ float4 RayMarching(Ray ray, float2 tex)
 			
             float3 viewDir = -ray.d;
 
-			result = Shade(Position, worldNormal, viewDir, color);
-		}
-		else
-		{
-			result = txRoom.Sample(txSampler, tex);
-		}
+            output.Color = Shade(Position, worldNormal, viewDir, color);
+            
+			float4 clipSpacePos = mul(float4(Position, 1.0f), ViewProjection);
+            output.Depth = clipSpacePos.z / clipSpacePos.w;
+			
+            return output;
+        }
 	}
+	
+    discard;
 
-	return result;
-
+    output.Color = float4(0, 0, 0, 0);
+    output.Depth = 1.0f;
+    return output;
 }
 
-float4 main(VS_Canvas input) : SV_TARGET
+PS_OUTPUT main(PS_INPUT input)
 {
-	float zoom = 0.004;
-float2 xy = zoom * input.canvasXY;
-float distEye2Canvas = nearPlane;
-float3 PixelPos = float3(xy, distEye2Canvas);
+	Ray eyeRay;
+	eyeRay.o = Eye.xyz;
+	eyeRay.d = normalize(input.WorldPos - Eye.xyz);	//view direction
 
-Ray eyeRay;
-eyeRay.o = Eye.xyz;
-eyeRay.d = normalize(PixelPos - Eye.xyz);	//view direction
-
-return RayMarching(eyeRay, input.tex);
+	return RayMarching(eyeRay, input.tex);
 }
