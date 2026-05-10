@@ -61,7 +61,7 @@ bool Scene::CreateRoomRenderTarget(ID3D11Device* device, UINT in_width, UINT in_
 	float width = static_cast<float>(in_width);
 	float height = static_cast<float>(in_height);
 	float aspectRatio = width / height;
-	float fovAngleY = 70.0f * XM_PI / 180.0f;
+	float fovAngleY = 60.0f * XM_PI / 180.0f;
 
 	ScreenSizeData.height = height;
 	ScreenSizeData.width = width;
@@ -95,7 +95,7 @@ bool Scene::CreateRoomRenderTarget(ID3D11Device* device, UINT in_width, UINT in_
 	);
 
 	// Eye is at (0,0.7,1.5), looking at point (0,-0.1,0) with the up-vector along the y-axis.
-	static const XMVECTORF32 eye = { 0.0f, 3.5f, 5.0f, 1.0f };
+	static const XMVECTORF32 eye = { 0.0f, 0.0f, 4.95f, 1.0f };
 	static const XMVECTORF32 at = { 0.0f, -0.1f, 0.0f, 0.0f };
 	static const XMVECTORF32 up = { 0.0f, 1.0f, 0.0f, 0.0f };
 
@@ -109,13 +109,13 @@ bool Scene::CreateRoomRenderTarget(ID3D11Device* device, UINT in_width, UINT in_
 void Scene::SetupSceneObjects()
 {
 	//Set up PS constant buffer
-	LightingData.eye = XMFLOAT4(0.0f, 3.5f, 5.0f, 1.0f);
+	LightingData.eye = XMFLOAT4(0.0f, 0.0f, 4.95f, 1.0f);
 	LightingData.nearPlane = 1.0f;
 	LightingData.farPlane = 100.0f;
 	LightingData.lightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	LightingData.lightPos[0] = XMFLOAT4(-10.0f, 10.0f, -50.0f, 1.0f);
-	LightingData.lightPos[1] = XMFLOAT4(10.0f, 10.0f, 50.0f, 1.0f);
-	LightingData.lightPos[2] = XMFLOAT4(0.0f, 60.0f, 5.0f, 1.0f);
+	LightingData.lightPos[0] = XMFLOAT4(-10.0f, 10.0f, -25.0f, 1.0f);
+	LightingData.lightPos[1] = XMFLOAT4(10.0f, 10.0f, 25.0f, 1.0f);
+	LightingData.lightPos[2] = XMFLOAT4(0.0f, 20.0f, 5.0f, 1.0f);
 	LightingData.backgroundColor = XMFLOAT4(0.1f, 0.2f, 0.3f, 1.0f);
 	LightingData.padding = XMFLOAT2();
 
@@ -175,7 +175,7 @@ void Scene::SetupSceneObjects()
 		floorMat, D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST);
 	floor->Position = { 0.0f, -2.5f, 0.0f };
 	floor->Scale = { 5.5f, 5.5f, 5.0f };
-	m_floor = floor;// AddBackgroundObject(floor);
+	m_floor = floor;
 
 	//Add raymarched pillars as mesh objects
 	auto pillarMat = std::make_shared < Material>();
@@ -242,21 +242,14 @@ void Scene::SetupSceneObjects()
 			snakeIndices,
 			snakeMaterial
 		);
-		leftSnake->Position = { -1.5f, -2.5f, 0.0f };
-		leftSnake->Rotation = { -90.f, 0.f, 0.f };
+		leftSnake->Position = { -1.5f, -2.3f, -1.5f };
+		leftSnake->Rotation = { 0.0f, XM_PI, 0.f };
 		leftSnake->Scale = { 3.0f, 3.0f, 3.0f };
 		AddMeshObject(leftSnake);
 
-		auto rightSnake = std::make_shared<MeshObject>(
-			m_d3dDevice.Get(),
-			vertices.data(),
-			sizeof(VertexPositionTextureNTB),
-			(UINT)vertices.size(),
-			snakeIndices,
-			snakeMaterial
-		);
-		rightSnake->Position = { 1.5f, -2.5f, 0.0f };
-		rightSnake->Rotation = { -90.f, 0.f, 0.f };
+		auto rightSnake = std::make_shared<MeshObject>(*leftSnake);
+		rightSnake->Position = { 1.5f, -2.3f, -1.0f };
+		rightSnake->Rotation = { 0.f, XM_PI, 0.f };
 		rightSnake->Scale = { 3.0f, 3.0f, 3.0f };
 		AddMeshObject(rightSnake);
 	}
@@ -288,10 +281,6 @@ void Scene::Render(ID3D11DeviceContext* context)
 
 	context->UpdateSubresource(m_timeConstantBuffer.Get(), 0, nullptr, &TimeData, 0, 0);
 	context->VSSetConstantBuffers(2, 1, m_timeConstantBuffer.GetAddressOf());
-
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mainRTV;
-	Microsoft::WRL::ComPtr<ID3D11DepthStencilView> mainDSV;
-	context->OMGetRenderTargets(1, mainRTV.GetAddressOf(), mainDSV.GetAddressOf());
 
 	context->OMSetDepthStencilState(m_depthWriteOffState.Get(), 0);
 

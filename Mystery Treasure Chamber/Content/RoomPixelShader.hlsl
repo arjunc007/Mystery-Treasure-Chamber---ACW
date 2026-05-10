@@ -58,7 +58,7 @@ float sdPlane(float3 p, float4 n)
 
 float room(float3 Position)
 {
-	return  -sdBox(Position, float3(5, 5, 5));
+	return  -sdBox(Position, float3(4.95, 4.95, 4.95));
 }
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -129,8 +129,11 @@ float4 Shade(float3 Position, float3 normal, float3 viewDir, float3 color)
 {
 	float4 diff = float4(color, 1.0f);
 	float4 spec = diff * 0.15f;
-
-	float4 output = (float4)0;
+	
+	//Lights are above the ceiling, so a base albedo to show the ceiling
+    float4 output = float4(color, 1.0) * 0.4f;
+	//float4 output = (float4)0;
+	
 	float3 lightDir;
 
 	for (int i = 0; i < NUMLIGHTS; i++)
@@ -168,7 +171,7 @@ float4 RayMarching(Ray ray)
 		{
 			float3 Position = ray.o + ray.d * t;
 			float3 normal = CalcNormal(Position);
-
+			
             float2 UV = CalcUV(Position, normal);
 			
 			float3 color = txTexture.SampleLevel(txSampler, 0.5f * UV, 0).rgb;
