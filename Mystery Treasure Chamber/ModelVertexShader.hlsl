@@ -47,9 +47,18 @@ VS_OUTPUT main(VS_INPUT Input)
 	//Pos.x *= (height / width);
 
 	//Animate snake with time
-	float t = 4 + 0.5 * (sin(time));
-	//if (Pos.z > -1.f)
-		Pos.x += 0.07f * sin(5 * Pos.z * t);
+    float waveSpeed = 5.0f;
+    float waveFrequency = 2.0f;
+    float waveAmplitude = 0.07f;
+	
+    float headZ = -0.42f;
+    float neckZ = 0.25f;
+	
+    float slitherMask = 1.0f - smoothstep(neckZ, headZ, Pos.z);
+    float rawSlither = sin(Pos.z * waveFrequency + time * waveSpeed) * waveAmplitude;
+	
+    float finalSlitherOffset = rawSlither * slitherMask;
+    Pos.x += finalSlitherOffset;
 
 	Output.Position = mul(Pos, model);
 	Output.Position = mul(Output.Position, view);

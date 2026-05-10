@@ -38,7 +38,8 @@ float4 main(VS_OUTPUT Input) : SV_TARGET
 	float4 diff = txTexture.Sample(txSampler, Input.Texture);
 	float4 spec = diff * 0.15f;
 
-	float4 color = (float4)0;
+    float4 color = diff* 0.2f;
+	//float4 color = (float4)0;
 	float3 lightDir;
 	float3 viewDir = normalize(Eye.xyz - Input.WorldPos.xyz);
 
