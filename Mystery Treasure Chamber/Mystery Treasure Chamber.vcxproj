@@ -152,6 +152,8 @@
     <ClInclude Include="MeshObject.h" />
     <ClInclude Include="Mystery Treasure Chamber.h" />
     <ClInclude Include="Mystery_Treasure_ChamberMain.h" />
+    <ClInclude Include="ParticleMaterial.h" />
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Scene.h" />
@@ -167,6 +169,8 @@
     <ClCompile Include="MeshObject.cpp" />
     <ClCompile Include="Mystery Treasure Chamber.cpp" />
     <ClCompile Include="Mystery_Treasure_ChamberMain.cpp" />
+    <ClCompile Include="ParticleMaterial.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneObject.cpp" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Material.h"
 #include "MeshObject.h"
+#include "ParticleSystem.h"
 #include "Scene.h"
 
 #include <fstream>
@@ -51,6 +52,27 @@ bool Scene::Initialize(ID3D11Device* device)
 	if (FAILED(device->CreateDepthStencilState(&depthDesc, m_depthWriteOffState.GetAddressOf()))) return false;
 
 	SetupSceneObjects();
+
+	m_fireSystem = std::make_shared<Mystery_Treasure_Chamber::ParticleSystem>();
+
+	std::vector<DirectX::XMFLOAT3> pillarTorches = {
+		{-4.0f, 2.0f, -4.0f},
+		{ 4.0f, 2.0f, -4.0f},
+		{-4.0f, 2.0f,  4.0f},
+		{ 4.0f, 2.0f,  4.0f}
+	};
+	m_fireSystem->Initialize(device, pillarTorches);
+
+	auto fireMat = std::make_shared<ParticleMaterial>();
+
+	// Load your specific shaders and textures here
+	fireMat->LoadUpdateShaders(device, L"ParticleVertexShaderSO.cso", L"GeometryShaderSO.cso");
+	fireMat->LoadRenderShaders(device, L"ParticleVertexShader.cso", L"GeometryShader.cso", L"ParticlePixelShader.cso");
+	fireMat->LoadTextures(device, L"Assets\\Textures\\fire.DDS", L"Assets\\Textures\\noise.DDS");
+	fireMat->InitializeStates(device);
+
+	// 2. Give the material to the Particle System
+	m_fireSystem->SetMaterial(fireMat);
 
 	return true;
 }
@@ -322,4 +344,7 @@ void Scene::Render(ID3D11DeviceContext* context)
 
         obj->Draw(context);
     }
+
+	context->GSSetConstantBuffers(0, 1, m_timeConstantBuffer.GetAddressOf());
+	m_fireSystem->UpdateAndRender(context);
 }

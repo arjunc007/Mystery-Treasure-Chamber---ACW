@@ -1,18 +1,18 @@
 //Move the particles according to their age
 struct VS_INPUT {
-	float3 position : POSITION;
-	float3 speed : TEXCOORD0;
-	float2 size : TEXCOORD1;
-	float age : TEXCOORD2;
-	uint type : TEXCOORD3;
+    float3 position : TEXCOORD0;
+	float3 speed : TEXCOORD1;
+	float2 size : TEXCOORD2;
+	float age : TEXCOORD3;
+	uint type : TEXCOORD4;
 };
 
 struct GS_INPUT
 {
-	float3 position : POSITION;
-	float2 size : TEXCOORD0;
-	float alpha : TEXCOORD1;
-	uint type : TEXCOORD2;
+    float3 position : TEXCOORD0;
+	float2 size : TEXCOORD1;
+	float alpha : TEXCOORD2;
+	uint type : TEXCOORD3;
 };
 
 GS_INPUT main( VS_INPUT input )

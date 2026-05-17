@@ -6,6 +6,11 @@
 #include <memory>
 #include <wrl/client.h>
 
+namespace Mystery_Treasure_Chamber
+{
+	class ParticleSystem;
+}
+
 class Scene
 {
 public:
@@ -32,6 +37,7 @@ private:
 	std::vector<std::shared_ptr<SceneObject>> m_backgroundObjects;
 	std::vector<std::shared_ptr<SceneObject>> m_meshObjects;
 	std::shared_ptr<SceneObject> m_floor;
+	std::shared_ptr<Mystery_Treasure_Chamber::ParticleSystem> m_fireSystem;
 
 	Microsoft::WRL::ComPtr<ID3D11Device> m_d3dDevice;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_mvpConstantBuffer;

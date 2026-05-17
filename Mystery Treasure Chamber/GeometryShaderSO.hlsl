@@ -12,16 +12,16 @@ cbuffer TimeBuffer : register(b0)
 }
 
 struct Particle {
-	float3 position : POSITION;
-	float3 speed : TEXCOORD0;
-	float2 size : TEXCOORD1;
-	float age : TEXCOORD2;
-	uint type : TEXCOORD3;
+    float3 position : TEXCOORD0;
+	float3 speed : TEXCOORD1;
+	float2 size : TEXCOORD2;
+	float age : TEXCOORD3;
+	uint type : TEXCOORD4;
 };
 
 float3 RandDirCone(float offset)
 {
-	float u = totalTime + offset;
+    float u = (totalTime + offset) * 0.05f;
 	float3 v = txTexture.SampleLevel(txSampler, u, 0).xyz;
 
 	return normalize(v);
@@ -36,40 +36,51 @@ float RandomFloat(float min, float max)
 
 }
 
-[maxvertexcount(2)]
+[maxvertexcount(6)]
 void main(
 	point Particle input[1],
 	inout PointStream< Particle > output)
 {
-	input[0].age += deltaTime;
+    Particle p = input[0];
 
 	//Particle is emitter
-	if (input[0].type == 0)
+	if (p.type == 0)
 	{
-		if (input[0].age > 0.005f)
+        p.age += deltaTime;
+        output.Append(p);
+		
+		if (p.age > 0.05f)
 		{
-			float3 randomDir = RandDirCone(0.0f);
-
-			Particle p;
-			p.position = input[0].position;
-			p.speed = RandomFloat(1.0f, 5.0f) * randomDir;
-			p.size = input[0].size;
-			p.age = 0.0f;
-			p.type = 1;
-
-			output.Append(p);
+            Particle pNew;
+            pNew.type = 1;
+            pNew.age = 0.0f;
+			
+            pNew.position = p.position;
+			
+			float3 randomDir = RandDirCone(p.position.y);
+			pNew.speed = RandomFloat(1.0f, 5.0f) * randomDir;
+			
+			pNew.size = p.size;
+			
+			output.Append(pNew);
 
 			//Reset age
-			input[0].age = 0.0f;
+			p.age = 0.0f;
 		}
-
-		//Keep the emitter
-		output.Append(input[0]);
 	}
 	else
 	{
+        p.age += deltaTime;
 		//Keep particle if living
-		if (input[0].age <= 1.0f)
-			output.Append(input[0]);
+		if (p.age <= 1.0f)
+        {
+            p.position += p.speed * deltaTime;
+			
+			//Size depends on age
+            float lifeRatio = p.age / 1.0f;
+            p.size = lerp(float2(1.0f, 1.0f), float2(0.1f, 0.1f), lifeRatio);
+			
+			output.Append(p);
+        }
 	}
 }

@@ -24,12 +24,21 @@ cbuffer ViewBuffer : register(b2)
 	float2 padding;
 };
 
+struct Particle
+{
+    float3 position : TEXCOORD0;
+    float3 speed : TEXCOORD1;
+    float2 size : TEXCOORD2;
+    float age : TEXCOORD3;
+    uint type : TEXCOORD4;
+};
+
 struct GS_INPUT
 {
-	float3 position : POSITION;
-	float2 size : TEXCOORD0;
-	float alpha : TEXCOORD1;
-	uint type : TEXCOORD2;
+    float3 position : TEXCOORD0;
+	float2 size : TEXCOORD1;
+	float alpha : TEXCOORD2;
+	uint type : TEXCOORD3;
 };
 
 struct PS_INPUT
@@ -40,10 +49,10 @@ struct PS_INPUT
 };
 
 static const float2 quadTex[4] = {
-	{1, 1},
-	{1, 0},
-	{0, 0},
-	{0, 1}
+	{0.0f, 1.0f},
+	{0.0f, 0.0f},
+	{1.0f, 1.0f},
+	{1.0f, 0.0f}
 };
 
 [maxvertexcount(4)]
@@ -55,25 +64,27 @@ void main(
 	{
 		float3 look = normalize(Eye.xyz - input[0].position.xyz);
 		float3 right = cross(float3(0, 1, 0), look);
-		float3 up = cross(look, right);
+        float3 up = normalize(cross(look, right));
+		
+        float halfWidth = input[0].size.x * 0.5f;
+        float halfHeight = input[0].size.y * 0.5f;
 
 		float4 v[4];
-		v[0] = float4(input[0].position + right * input[0].size.x * height / width - input[0].size.y * up, 1.0f);
-		v[1] = float4(input[0].position + right * input[0].size.x * height / width + input[0].size.y * up, 1.0f);
-		v[2] = float4(input[0].position - right * input[0].size.x * height / width - input[0].size.y * up, 1.0f);
-		v[3] = float4(input[0].position - right * input[0].size.x * height / width + input[0].size.y * up, 1.0f);
+		v[0] = float4(input[0].position - right * halfWidth - up * halfHeight, 1.0f);
+        v[1] = float4(input[0].position - right * halfWidth + up * halfHeight, 1.0f);
+        v[2] = float4(input[0].position + right * halfWidth - up * halfHeight, 1.0f);
+        v[3] = float4(input[0].position + right * halfWidth + up * halfHeight, 1.0f);
 
-		PS_INPUT p;
+        PS_INPUT p = (PS_INPUT)0;
 		[unroll]
 		for (int i = 0; i < 4; ++i)
 		{
-			p.pos = mul(v[i], model);
 			p.pos = mul(p.pos, view);
 			p.pos = mul(p.pos, projection);
+			
 			p.uv = quadTex[i];
 			p.color = float4(1.0f, 1.0f, 1.0f, input[0].alpha);
 			output.Append(p);
 		}
-
 	}
 }

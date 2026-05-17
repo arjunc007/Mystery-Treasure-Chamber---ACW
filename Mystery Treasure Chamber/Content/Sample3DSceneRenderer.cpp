@@ -47,31 +47,9 @@ void Sample3DSceneRenderer::Render()
 {
 	auto context = m_deviceResources->GetD3DDeviceContext();
 
-//First, draw the room using ray marching
-//----------------------------------------------------------------------------------------------------------------------------------------------
-
-	// Draw the objects.
-
-//Second, draw the tessellated floor after the room walls.
-//----------------------------------------------------------------------------------------------------------------------------------------------
-	//Clear depth buffer
-	
-
-	//context->RSSetState(m_cullFrontState.Get());
-
-	//Draw the quad
-
 	// Reset render targets to the screen.
 
 	m_scene->Render(context);
-
-//Third, draw the pillars on top of the floor using ray marching
-//----------------------------------------------------------------------------------------------------------------------------------------------
-
-//Draw explicit models from vertex buffers
-//----------------------------------------------------------------------------------------------------------------------------------------------
-
-	
 	
 
 	//Draw the particles using geometry shader
@@ -270,12 +248,6 @@ void Sample3DSceneRenderer::CreateDeviceDependentResources()
 		cullDesc.FillMode = D3D11_FILL_SOLID;
 		cullDesc.CullMode = D3D11_CULL_BACK;
 		DX::ThrowIfFailed(d3dDevice->CreateRasterizerState(&cullDesc, &m_DisableCullState));
-	}
-
-	//Textures
-	{
-		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\fire.DDS", nullptr, &m_fireTexture));
-		DX::ThrowIfFailed(CreateDDSTextureFromFile(d3dDevice, L"Assets\\Textures\\noise.DDS", nullptr, &m_noiseTexture));
 	}
 
 	//Particles
