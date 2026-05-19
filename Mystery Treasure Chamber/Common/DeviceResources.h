@@ -54,7 +54,7 @@ namespace DX
 		// D2D Accessors.
 		ID2D1Factory3*				GetD2DFactory() const					{ return m_d2dFactory.Get(); }
 		ID2D1Device2*				GetD2DDevice() const					{ return m_d2dDevice.Get(); }
-		ID2D1DeviceContext2*		GetD2DDeviceContext() const				{ return m_d2dContext.Get(); }
+		ID2D1DeviceContext2* GetD2DDeviceContext() const { if (m_d2dContext) return m_d2dContext.Get(); return nullptr; }
 		ID2D1Bitmap1*				GetD2DTargetBitmap() const				{ return m_d2dTargetBitmap.Get(); }
 		IDWriteFactory3*			GetDWriteFactory() const				{ return m_dwriteFactory.Get(); }
 		IWICImagingFactory2*		GetWicImagingFactory() const			{ return m_wicFactory.Get(); }

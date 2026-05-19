@@ -15,7 +15,11 @@ namespace Mystery_Treasure_Chamber
 	
 		bool Initialize(ID3D11Device* device, const std::vector<DirectX::XMFLOAT3>& emitterPositions);
 	
-		void UpdateAndRender(ID3D11DeviceContext* context);
+		void UpdateAndRender(ID3D11DeviceContext* context,
+			ID3D11Buffer* timeBuffer,
+			ID3D11Buffer* matrixBuffer,
+			ID3D11Buffer* resizeBuffer,
+			ID3D11Buffer* viewBuffer);
 	
 		void SetMaterial(std::shared_ptr<ParticleMaterial> material)
 		{

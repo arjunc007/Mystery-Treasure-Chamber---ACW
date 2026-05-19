@@ -124,24 +124,28 @@ bool ParticleMaterial::InitializeStates(ID3D11Device* device)
 	return true;
 }
 
-void ParticleMaterial::BindForUpdate(ID3D11DeviceContext* context)
+void ParticleMaterial::BindForUpdate(ID3D11DeviceContext* context, ID3D11Buffer* timeBuffer)
 {
 	context->IASetInputLayout(m_inputLayout.Get());
 	context->VSSetShader(m_updateVS.Get(), nullptr, 0);
 	context->GSSetShader(m_updateGS.Get(), nullptr, 0);
-
 	context->PSSetShader(nullptr, nullptr, 0);
+
+	context->GSSetConstantBuffers(0, 1, &timeBuffer);
 
 	context->GSSetShaderResources(0, 1, m_noiseTexture.GetAddressOf());
 	context->GSSetSamplers(0, 1, m_sampler.GetAddressOf());
 }
 
-void ParticleMaterial::BindForRender(ID3D11DeviceContext* context)
+void ParticleMaterial::BindForRender(ID3D11DeviceContext* context, ID3D11Buffer* matrixBuffer, ID3D11Buffer* resizeBuffer, ID3D11Buffer* viewBuffer)
 {
 	context->IASetInputLayout(m_inputLayout.Get());
 	context->VSSetShader(m_renderVS.Get(), nullptr, 0);
 	context->GSSetShader(m_renderGS.Get(), nullptr, 0);
 	context->PSSetShader(m_renderPS.Get(), nullptr, 0);
+
+	ID3D11Buffer* gsBuffers[] = { matrixBuffer, resizeBuffer, viewBuffer };
+	context->GSSetConstantBuffers(0, 3, gsBuffers);
 
 	context->PSSetShaderResources(0, 1, m_fireTexture.GetAddressOf());
 	context->PSSetSamplers(0, 1, m_sampler.GetAddressOf());

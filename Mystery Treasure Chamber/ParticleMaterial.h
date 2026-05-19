@@ -18,8 +18,11 @@ namespace Mystery_Treasure_Chamber
 		
 		bool InitializeStates(ID3D11Device* device);
 
-		void BindForUpdate(ID3D11DeviceContext* context);
-		void BindForRender(ID3D11DeviceContext* context);
+		void BindForUpdate(ID3D11DeviceContext* context, ID3D11Buffer* timeBuffer);
+		void BindForRender(ID3D11DeviceContext* context,
+			ID3D11Buffer* matrixBuffer,
+			ID3D11Buffer* resizeBuffer,
+			ID3D11Buffer* viewBuffer);
 		void Unbind(ID3D11DeviceContext* context);
 
 	private:

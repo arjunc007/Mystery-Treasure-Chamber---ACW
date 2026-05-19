@@ -79,6 +79,7 @@ void main(
 		[unroll]
 		for (int i = 0; i < 4; ++i)
 		{
+            p.pos = v[i];
 			p.pos = mul(p.pos, view);
 			p.pos = mul(p.pos, projection);
 			

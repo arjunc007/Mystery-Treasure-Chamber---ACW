@@ -6,6 +6,12 @@ using namespace D2D1;
 using namespace DirectX;
 using namespace Microsoft::WRL;
 
+bool IsRenderDocAttached()
+{
+	// If this module is loaded, RenderDoc is currently spying on us!
+	return GetModuleHandleA("renderdoc.dll") != nullptr;
+}
+
 // Constructor for DeviceResources.
 DX::DeviceResources::DeviceResources() :
 	m_screenViewport(),
@@ -159,21 +165,24 @@ void DX::DeviceResources::CreateDeviceResources()
 		);
 
 	// Create the Direct2D device object and a corresponding context.
-	ComPtr<IDXGIDevice3> dxgiDevice;
-	DX::ThrowIfFailed(
+	if (!IsRenderDocAttached())
+	{
+		ComPtr<IDXGIDevice3> dxgiDevice;
+		DX::ThrowIfFailed(
 		m_d3dDevice.As(&dxgiDevice)
 		);
 
-	DX::ThrowIfFailed(
-		m_d2dFactory->CreateDevice(dxgiDevice.Get(), &m_d2dDevice)
+		DX::ThrowIfFailed(
+			hr = m_d2dFactory->CreateDevice(dxgiDevice.Get(), &m_d2dDevice)
 		);
 
-	DX::ThrowIfFailed(
-		m_d2dDevice->CreateDeviceContext(
-			D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
-			&m_d2dContext
+		DX::ThrowIfFailed(
+			m_d2dDevice->CreateDeviceContext(
+				D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
+				&m_d2dContext
 			)
 		);
+	}
 }
 
 // These resources need to be recreated every time the window size is changed.
@@ -183,7 +192,10 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 	ID3D11RenderTargetView* nullViews[] = {nullptr};
 	m_d3dContext->OMSetRenderTargets(ARRAYSIZE(nullViews), nullViews, nullptr);
 	m_d3dRenderTargetView = nullptr;
-	m_d2dContext->SetTarget(nullptr);
+	if (m_d2dContext)
+	{
+		m_d2dContext->SetTarget(nullptr);
+	}
 	m_d2dTargetBitmap = nullptr;
 	m_d3dDepthStencilView = nullptr;
 	m_d3dContext->Flush1(D3D11_CONTEXT_TYPE_ALL, nullptr);
@@ -325,32 +337,35 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 
 	// Create a Direct2D target bitmap associated with the
 	// swap chain back buffer and set it as the current target.
-	D2D1_BITMAP_PROPERTIES1 bitmapProperties = 
-		D2D1::BitmapProperties1(
-			D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
-			D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
-			m_dpi,
-			m_dpi
+	if (!IsRenderDocAttached())
+	{
+		D2D1_BITMAP_PROPERTIES1 bitmapProperties =
+			D2D1::BitmapProperties1(
+				D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW,
+				D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_PREMULTIPLIED),
+				m_dpi,
+				m_dpi
 			);
 
-	ComPtr<IDXGISurface2> dxgiBackBuffer;
-	DX::ThrowIfFailed(
-		m_swapChain->GetBuffer(0, IID_PPV_ARGS(&dxgiBackBuffer))
+		ComPtr<IDXGISurface2> dxgiBackBuffer;
+		DX::ThrowIfFailed(
+			m_swapChain->GetBuffer(0, IID_PPV_ARGS(&dxgiBackBuffer))
 		);
 
-	DX::ThrowIfFailed(
-		m_d2dContext->CreateBitmapFromDxgiSurface(
-			dxgiBackBuffer.Get(),
-			&bitmapProperties,
-			&m_d2dTargetBitmap
+		DX::ThrowIfFailed(
+			m_d2dContext->CreateBitmapFromDxgiSurface(
+				dxgiBackBuffer.Get(),
+				&bitmapProperties,
+				&m_d2dTargetBitmap
 			)
 		);
 
-	m_d2dContext->SetTarget(m_d2dTargetBitmap.Get());
-	m_d2dContext->SetDpi(m_effectiveDpi, m_effectiveDpi);
+		m_d2dContext->SetTarget(m_d2dTargetBitmap.Get());
+		m_d2dContext->SetDpi(m_effectiveDpi, m_effectiveDpi);
 
-	// Grayscale text anti-aliasing is recommended for all Windows Store apps.
-	m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
+		// Grayscale text anti-aliasing is recommended for all Windows Store apps.
+		m_d2dContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
+	}
 }
 
 // Determine the dimensions of the render target and whether it will be scaled down.
@@ -369,7 +384,10 @@ void DX::DeviceResources::SetWindow(HWND window, int width, int height)
 	m_logicalWidth = static_cast<float>(width);
 	m_logicalHeight = static_cast<float>(height);
 	
-	m_d2dContext->SetDpi(m_dpi, m_dpi);
+	if (m_d2dContext)
+	{
+		m_d2dContext->SetDpi(m_dpi, m_dpi);
+	}
 
 	CreateWindowSizeDependentResources();
 }
@@ -392,7 +410,10 @@ void DX::DeviceResources::SetDpi(float dpi)
 	{
 		m_dpi = dpi;
 
-		m_d2dContext->SetDpi(m_dpi, m_dpi);
+		if (m_d2dContext)
+		{
+			m_d2dContext->SetDpi(m_dpi, m_dpi);
+		}
 		CreateWindowSizeDependentResources();
 	}
 }
@@ -460,7 +481,10 @@ void DX::DeviceResources::HandleDeviceLost()
 	}
 
 	CreateDeviceResources();
-	m_d2dContext->SetDpi(m_dpi, m_dpi);
+	if (m_d2dContext)
+	{
+		m_d2dContext->SetDpi(m_dpi, m_dpi);
+	}
 	CreateWindowSizeDependentResources();
 
 	if (m_deviceNotify != nullptr)
@@ -506,6 +530,7 @@ void DX::DeviceResources::Present()
 	// must recreate all device resources.
 	if (hr == DXGI_ERROR_DEVICE_REMOVED || hr == DXGI_ERROR_DEVICE_RESET)
 	{
+		HRESULT reason = m_d3dDevice->GetDeviceRemovedReason();
 		HandleDeviceLost();
 	}
 	else

@@ -14,6 +14,7 @@ Mystery_Treasure_ChamberMain::Mystery_Treasure_ChamberMain(const std::shared_ptr
 	// TODO: Replace this with your app's content initialization.
 	m_sceneRenderer = std::unique_ptr<Sample3DSceneRenderer>(new Sample3DSceneRenderer(m_deviceResources));
 
+	if(m_deviceResources->GetD2DDeviceContext())
 	m_fpsTextRenderer = std::unique_ptr<SampleFpsTextRenderer>(new SampleFpsTextRenderer(m_deviceResources));
 
 	// TODO: Change the timer settings if you want something other than the default variable timestep mode.
@@ -45,7 +46,10 @@ void Mystery_Treasure_ChamberMain::Update()
 	{
 		// TODO: Replace this with your app's content update functions.
 		m_sceneRenderer->Update(m_timer);
-		m_fpsTextRenderer->Update(m_timer);
+		if (m_deviceResources->GetD2DDeviceContext())
+		{
+			m_fpsTextRenderer->Update(m_timer);
+		}
 	});
 }
 
@@ -78,7 +82,10 @@ bool Mystery_Treasure_ChamberMain::Render()
 	// Render the scene objects.
 	// TODO: Replace this with your app's content rendering functions.
 	m_sceneRenderer->Render();
-	m_fpsTextRenderer->Render();
+	if (m_deviceResources->GetD2DDeviceContext() != nullptr)
+	{
+		m_fpsTextRenderer->Render();
+	}
 
 	return true;
 }
@@ -87,13 +94,19 @@ bool Mystery_Treasure_ChamberMain::Render()
 void Mystery_Treasure_ChamberMain::OnDeviceLost()
 {
 	m_sceneRenderer->ReleaseDeviceDependentResources();
-	m_fpsTextRenderer->ReleaseDeviceDependentResources();
+	if (m_deviceResources->GetD2DDeviceContext() != nullptr)
+	{
+		m_fpsTextRenderer->ReleaseDeviceDependentResources();
+	}
 }
 
 // Notifies renderers that device resources may now be recreated.
 void Mystery_Treasure_ChamberMain::OnDeviceRestored()
 {
 	m_sceneRenderer->CreateDeviceDependentResources();
-	m_fpsTextRenderer->CreateDeviceDependentResources();
+	if (m_deviceResources->GetD2DDeviceContext() != nullptr)
+	{
+		m_fpsTextRenderer->CreateDeviceDependentResources();
+	}
 	CreateWindowSizeDependentResources();
 }

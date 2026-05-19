@@ -56,7 +56,11 @@ bool ParticleSystem::CreateParticleBuffer(ID3D11Device* device, ID3D11Buffer** b
 	}
 }
 
-void ParticleSystem::UpdateAndRender(ID3D11DeviceContext* context)
+void ParticleSystem::UpdateAndRender(ID3D11DeviceContext* context,
+	ID3D11Buffer* timeBuffer,
+	ID3D11Buffer* matrixBuffer,
+	ID3D11Buffer* resizeBuffer,
+	ID3D11Buffer* viewBuffer)
 {
 	if (!m_material) return;
 
@@ -66,7 +70,7 @@ void ParticleSystem::UpdateAndRender(ID3D11DeviceContext* context)
 	ID3D11Buffer* bufferRead = m_particleBuffers[m_pingPongToggle].Get();
 	ID3D11Buffer* bufferWrite = m_particleBuffers[!m_pingPongToggle].Get();
 
-	m_material->BindForUpdate(context);
+	m_material->BindForUpdate(context, timeBuffer);
 
 	context->IASetVertexBuffers(0, 1, &bufferRead, &stride, &offset);
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
@@ -85,7 +89,7 @@ void ParticleSystem::UpdateAndRender(ID3D11DeviceContext* context)
 	ID3D11Buffer* nullBuffer = nullptr;
 	context->SOSetTargets(1, &nullBuffer, &offset);
 
-	m_material->BindForRender(context);
+	m_material->BindForRender(context, matrixBuffer, resizeBuffer, viewBuffer);
 
 	context->IASetVertexBuffers(0, 1, &bufferWrite, &stride, &offset);
 	context->DrawAuto();

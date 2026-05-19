@@ -345,6 +345,11 @@ void Scene::Render(ID3D11DeviceContext* context)
         obj->Draw(context);
     }
 
-	context->GSSetConstantBuffers(0, 1, m_timeConstantBuffer.GetAddressOf());
-	m_fireSystem->UpdateAndRender(context);
+	m_fireSystem->UpdateAndRender(
+		context,
+		m_timeConstantBuffer.Get(),
+		m_mvpConstantBuffer.Get(),
+		m_sizeConstantBuffer.Get(),
+		m_psConstantBuffer.Get()
+	);
 }
