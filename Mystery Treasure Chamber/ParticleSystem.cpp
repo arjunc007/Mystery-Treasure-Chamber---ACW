@@ -6,7 +6,7 @@ using namespace DirectX;
 
 ParticleSystem::ParticleSystem() : m_firstRun(true)
 								, m_initialEmittersCount(4)
-								, m_pingPongToggle(0), m_maxParticles(10000) {}
+								, m_pingPongToggle(0), m_maxParticles(1000) {}
 
 bool ParticleSystem::Initialize(ID3D11Device* device, const std::vector<XMFLOAT3>& emitterPositions)
 {

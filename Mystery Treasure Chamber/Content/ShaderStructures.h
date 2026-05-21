@@ -53,7 +53,7 @@ namespace Mystery_Treasure_Chamber
 		DirectX::XMFLOAT4 eye;
 		DirectX::XMFLOAT4 lightColor;
 		DirectX::XMFLOAT4 backgroundColor;
-		DirectX::XMFLOAT4 lightPos[3];
+		DirectX::XMFLOAT4 lightPos[4];
 		float nearPlane;
 		float farPlane;
 		DirectX::XMFLOAT2 padding;

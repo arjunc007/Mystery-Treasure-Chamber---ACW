@@ -18,7 +18,7 @@ cbuffer ViewBuffer : register(b2)
 	float4 Eye;
 	float4 LightColor;
 	float4 backgroundColor;
-	float4 LightPos[3];
+	float4 LightPos[4];
 	float nearPlane;
 	float farPlane;
 	float2 padding;

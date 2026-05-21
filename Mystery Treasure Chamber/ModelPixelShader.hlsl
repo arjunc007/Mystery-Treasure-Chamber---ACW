@@ -3,14 +3,14 @@
 SamplerState txSampler : register(s0);
 Texture2D txTexture : register(t0);
 
-#define NUMLIGHTS 3
+#define NUMLIGHTS 4
 
 cbuffer PixelShaderConstantBuffer : register(b0)
 {
 	float4 Eye;
 	float4 LightColor;
 	float4 backgroundColor;
-	float4 LightPos[3];
+	float4 LightPos[4];
 	float nearPlane;
 	float farPlane;
 	float2 padding;

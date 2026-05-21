@@ -4,14 +4,7 @@ Texture2D txTexture : register(t0);
 Texture2D txNormal : register(t1);
 SamplerState txSampler : register(s0);
 
-#define NUMLIGHTS 3
-
-//static float4 Eye = float4(0, 3.5, 5, 1);//eye position
-//static float nearPlane = 1.0;
-//static float farPlane = 100.0;
-//static float4 LightColor = float4(1, 1, 1, 1);
-//static float4 backgroundColor = float4(0.1, 0.2, 0.3, 1);
-//static float3 LightPos[NUMLIGHTS] = { float3(-50, 10, -5), float3(60, 10, 5), float3(0, -10, 0) };
+#define NUMLIGHTS 4
 
 #define MIN_XYZ -5.0
 #define MAX_XYZ 5.0
@@ -31,7 +24,7 @@ cbuffer PixelShaderConstantBuffer : register(b0)
 	float4 Eye;
 	float4 LightColor;
 	float4 backgroundColor;
-	float4 LightPos[3];
+	float4 LightPos[4];
 	float nearPlane;
 	float farPlane;
 	float2 padding;

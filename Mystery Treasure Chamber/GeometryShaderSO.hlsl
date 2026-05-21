@@ -19,21 +19,27 @@ struct Particle {
 	uint type : TEXCOORD4;
 };
 
-float3 RandDirCone(float offset)
+float3 RandDirCone(float3 pos)
 {
-    float u = (totalTime + offset) * 0.05f;
-	float3 v = txTexture.SampleLevel(txSampler, u, 0).xyz;
+    float2 uv = float2(totalTime + pos.x, totalTime + pos.z) * 0.1f;
+	
+    float3 noise = txTexture.SampleLevel(txSampler, uv, 0).rgb;
+	
+    float spreadX = noise.x - 0.5f;
+    float spreadZ = noise.z - 0.5f;
+	
+    float upwardForce = noise.y + 1.0f;
 
-	return normalize(v);
+    return normalize(float3(spreadX, upwardForce, spreadZ));
 }
 
-float RandomFloat(float min, float max)
+float RandomFloat(float3 pos, float min, float max)
 {
-	//Between 0 and 1
-	float r = (txTexture.SampleLevel(txSampler, totalTime, totalTime).x + 1) / 2;
+    float2 uv = float2(totalTime - pos.x, pos.z - totalTime) * 0.15f;
+	
+    float r = txTexture.SampleLevel(txSampler, uv, 0).x;
 
-	return r * (max - min) + min;
-
+    return r * (max - min) + min;
 }
 
 [maxvertexcount(6)]
@@ -57,9 +63,8 @@ void main(
 			
             pNew.position = p.position;
 			
-			float3 randomDir = RandDirCone(p.position.y);
-			pNew.speed = RandomFloat(1.0f, 5.0f) * randomDir;
-			
+            float3 randomDir = RandDirCone(p.position);
+            pNew.speed = RandomFloat(p.position, 1.0f, 4.0f) * randomDir;
 			pNew.size = p.size;
 			
 			output.Append(pNew);
@@ -70,14 +75,15 @@ void main(
 	}
 	else
 	{
+        float lifetime = 0.5f;
         p.age += deltaTime;
 		//Keep particle if living
-		if (p.age <= 1.0f)
+		if (p.age <= lifetime)
         {
             p.position += p.speed * deltaTime;
 			
 			//Size depends on age
-            float lifeRatio = p.age / 1.0f;
+            float lifeRatio = p.age / lifetime;
             p.size = lerp(float2(1.0f, 1.0f), float2(0.1f, 0.1f), lifeRatio);
 			
 			output.Append(p);

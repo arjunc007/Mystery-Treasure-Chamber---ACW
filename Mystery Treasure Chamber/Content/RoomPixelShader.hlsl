@@ -3,7 +3,7 @@
 Texture2D txTexture : register(t0);
 SamplerState txSampler : register(s0);
 
-#define NUMLIGHTS 3
+#define NUMLIGHTS 4
 
 #define MIN_XYZ -5.0
 #define MAX_XYZ 5.0
@@ -23,7 +23,7 @@ cbuffer PixelShaderConstantBuffer : register(b0)
 float4 Eye;
 float4 LightColor;
 float4 backgroundColor;
-float4 LightPos[3];
+float4 LightPos[4];
 float nearPlane;
 float farPlane;
 float2 padding;
@@ -131,8 +131,8 @@ float4 Shade(float3 Position, float3 normal, float3 viewDir, float3 color)
 	float4 spec = diff * 0.15f;
 	
 	//Lights are above the ceiling, so a base albedo to show the ceiling
-    float4 output = float4(color, 1.0) * 0.4f;
-	//float4 output = (float4)0;
+   // float4 output = float4(color, 1.0) * 0.4f;
+	float4 output = (float4)0;
 	
 	float3 lightDir;
 

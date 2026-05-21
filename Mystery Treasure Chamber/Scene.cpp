@@ -53,27 +53,6 @@ bool Scene::Initialize(ID3D11Device* device)
 
 	SetupSceneObjects();
 
-	m_fireSystem = std::make_shared<Mystery_Treasure_Chamber::ParticleSystem>();
-
-	std::vector<DirectX::XMFLOAT3> pillarTorches = {
-		{-4.0f, 2.0f, -4.0f},
-		{ 4.0f, 2.0f, -4.0f},
-		{-4.0f, 2.0f,  4.0f},
-		{ 4.0f, 2.0f,  4.0f}
-	};
-	m_fireSystem->Initialize(device, pillarTorches);
-
-	auto fireMat = std::make_shared<ParticleMaterial>();
-
-	// Load your specific shaders and textures here
-	fireMat->LoadUpdateShaders(device, L"ParticleVertexShaderSO.cso", L"GeometryShaderSO.cso");
-	fireMat->LoadRenderShaders(device, L"ParticleVertexShader.cso", L"GeometryShader.cso", L"ParticlePixelShader.cso");
-	fireMat->LoadTextures(device, L"Assets\\Textures\\fire.DDS", L"Assets\\Textures\\noise.DDS");
-	fireMat->InitializeStates(device);
-
-	// 2. Give the material to the Particle System
-	m_fireSystem->SetMaterial(fireMat);
-
 	return true;
 }
 
@@ -135,9 +114,10 @@ void Scene::SetupSceneObjects()
 	LightingData.nearPlane = 1.0f;
 	LightingData.farPlane = 100.0f;
 	LightingData.lightColor = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	LightingData.lightPos[0] = XMFLOAT4(-10.0f, 10.0f, -25.0f, 1.0f);
-	LightingData.lightPos[1] = XMFLOAT4(10.0f, 10.0f, 25.0f, 1.0f);
-	LightingData.lightPos[2] = XMFLOAT4(0.0f, 20.0f, 5.0f, 1.0f);
+	LightingData.lightPos[0] = XMFLOAT4(-3.0f, 1.0f, -2.5f, 1.0f);
+	LightingData.lightPos[1] = XMFLOAT4(3.0f, 1.0f, -2.5f, 1.0f);
+	LightingData.lightPos[2] = XMFLOAT4(-3.0f, 1.0f, 1.0f, 1.0f);
+	LightingData.lightPos[3] = XMFLOAT4(3.0f, 1.0f, 1.0f, 1.0f);
 	LightingData.backgroundColor = XMFLOAT4(0.1f, 0.2f, 0.3f, 1.0f);
 	LightingData.padding = XMFLOAT2();
 
@@ -211,8 +191,8 @@ void Scene::SetupSceneObjects()
 	auto pillars = std::make_shared<MeshObject>(
 		m_d3dDevice.Get(),
 		cubeVertices.data(), sizeof(VertexPositionColor), cubeVertices.size(), cubeIndices, pillarMat);
-	pillars->Scale = { 5.5f, 5.5, 5.5f };
-	pillars->Position = { 0.f, 0.f, 0.f };
+	pillars->Scale = { 5.5f, 5.5f, 5.5f };
+	pillars->Position = { 0.0f, 0.0f, 0.0f };
 	AddMeshObject(pillars);
 
 	//Add snakes to the scene
@@ -275,6 +255,25 @@ void Scene::SetupSceneObjects()
 		rightSnake->Scale = { 3.0f, 3.0f, 3.0f };
 		AddMeshObject(rightSnake);
 	}
+
+	m_fireSystem = std::make_shared<Mystery_Treasure_Chamber::ParticleSystem>();
+
+	std::vector<DirectX::XMFLOAT3> pillarTorches = {
+		{ -3.0f, 1.0f, -2.5f},
+		{ 3.0f, 1.0f, -2.5f},
+		{ -3.0f, 1.0f,  1.0f},
+		{ 3.0f, 1.0f,  1.0f}
+	};
+	m_fireSystem->Initialize(m_d3dDevice.Get(), pillarTorches);
+
+	auto fireMat = std::make_shared<ParticleMaterial>();
+
+	fireMat->LoadUpdateShaders(m_d3dDevice.Get(), L"ParticleVertexShaderSO.cso", L"GeometryShaderSO.cso");
+	fireMat->LoadRenderShaders(m_d3dDevice.Get(), L"ParticleVertexShader.cso", L"GeometryShader.cso", L"ParticlePixelShader.cso");
+	fireMat->LoadTextures(m_d3dDevice.Get(), L"Assets\\Textures\\fire.DDS", L"Assets\\Textures\\noise.DDS");
+	fireMat->InitializeStates(m_d3dDevice.Get());
+
+	m_fireSystem->SetMaterial(fireMat);
 }
 
 void::Scene::AddMeshObject(std::shared_ptr<SceneObject> obj)
