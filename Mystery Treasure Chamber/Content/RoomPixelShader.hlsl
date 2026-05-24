@@ -56,18 +56,93 @@ float sdPlane(float3 p, float4 n)
 	return dot(p, n.xyz) + n.w;
 }
 
+// SDF for a classic Diamond/Octahedron
+float sdOctahedron(float3 p, float s)
+{
+    p = abs(p);
+    return (p.x + p.y + p.z - s) * 0.57735027f; // Multiply by 1/sqrt(3) for exact distance
+}
+
+// SDF for a blocky Emerald/Ruby (Box)
+float sdBox2(float3 p, float3 b)
+{
+    float3 d = abs(p) - b;
+    return length(max(d, 0.0f)) + min(max(d.x, max(d.y, d.z)), 0.0f);
+}
+
+// A standard HLSL spatial hash function
+float Hash3D(float3 p)
+{
+    p = frac(p * 0.3183099f + 0.1f);
+    p *= 17.0f;
+    return frac(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+float2 opU(float2 d1, float2 d2)
+{
+    return (d1.x < d2.x) ? d1 : d2;
+}
+
 float room(float3 Position)
 {
 	return  -sdBox(Position, float3(4.95, 4.95, 4.95));
 }
 
+float2 MapTreasureHoard(float3 p)
+{
+    // the spacing between gems
+    float spacing = 2.0f;
+    
+    // ID of the current grid cell
+    float2 cellID = floor((p.xz + spacing * 0.5f) / spacing);
+    float2 localXZ = fmod(abs(p.xz + spacing * 0.5f), spacing) - spacing * 0.5f;
+    
+    if (abs(cellID.x) > 2.0f || abs(cellID.y) > 2.0f)
+    {
+        return float2(100.0f, 0.0f);
+    }
+    
+    // Generate a random number specific to this cell
+    float randomVal = Hash3D(float3(cellID.x, 0.0f, cellID.y));
+    
+    // Randomize Size (e.g., between 0.2 and 0.6)
+    float gemSize = lerp(0.2f, 0.6f, randomVal);
+    
+    float3 localPos = float3(localXZ.x, p.y + 1.0f - (gemSize * 0.5f), localXZ.y);
+    // Randomize Position slightly within the cell
+    // (So they don't look like a perfect chess board)
+    localPos.x += (Hash3D(float3(cellID.x, 10.0f, cellID.y)) - 0.5f) * 0.8f;
+    localPos.z += (Hash3D(float3(cellID.x, 20.0f, cellID.y)) - 0.5f) * 0.8f;
+    
+    // 7. Randomize the Shape!
+    float2 result = (float2)0;
+    if (randomVal > 0.5f)
+    {
+        // 50% chance to be a Diamond
+        result = float2(sdOctahedron(localPos, gemSize), 2.0f);
+    }
+    else
+    {
+        // 50% chance to be an Emerald/Ruby
+        // We use randomVal to make the box dimensions slightly rectangular
+        float3 boxExtents = float3(gemSize, gemSize * 0.5f, gemSize * 0.8f);
+        result = float2(sdBox2(localPos, boxExtents), 3.0f);
+    }
+    
+    return result;
+}
+
 //-------------------------------------------------------------------------------------------------------------------
 
-float Function(float3 Position)
+float2 Function(float3 Position)
 {
-	float Fun = room(Position);
+    float2 roomDist = float2(room(Position), 1.0f);
 	
-	return Fun;
+	// Distance to the infinite gem grid
+    float2 gems = MapTreasureHoard(Position);
+    
+    // Union the gems with the room
+    return opU(roomDist, gems);
 }
 
 bool IntersectBox(in Ray ray, in float3 minimum, in float3 maximum, out float timeIn, out float timeOut)
@@ -82,22 +157,24 @@ bool IntersectBox(in Ray ray, in float3 minimum, in float3 maximum, out float ti
 	return timeOut > timeIn;
 }
 
-bool RayMarchingInsideCube(in Ray ray, in float start, in float final, out float val)
+bool RayMarchingInsideCube(in Ray ray, in float start, in float final, out float2 val)
 {
-	val = 0.0;
+    val = float2(0.0f, -1.0f);
+	
 	float step = (final - start) / float(INTERVALS);
 	float time = start;
 	float3 Position = ray.o + time * ray.d;
-	float right, left = Function(Position);
+    float2 right;
+    float2 left = Function(Position);
 	
 	for (int i = 0; i < INTERVALS; i++)
 	{
 		time += step;
 		Position += step * ray.d;
 		right = Function(Position);
-		if (left * right < 0.0)
+		if (left.x * right.x < 0.0f)
 		{
-			val = time + right * step / (left - right);
+            val = float2(time + right.x * step / (left.x - right.x), right.y);
 			return true;
 		}
 		left = right;
@@ -107,12 +184,12 @@ bool RayMarchingInsideCube(in Ray ray, in float start, in float final, out float
 }
 
 float3 CalcNormal(float3 Position) {
-	float A = Function(Position + AxisX * STEP)
-		- Function(Position - AxisX * STEP);
-	float B = Function(Position + AxisY * STEP)
-		- Function(Position - AxisY * STEP);
-	float C = Function(Position + AxisZ * STEP)
-		- Function(Position - AxisZ * STEP);
+	float A = Function(Position + AxisX * STEP).x
+		- Function(Position - AxisX * STEP).x;
+	float B = Function(Position + AxisY * STEP).x
+		- Function(Position - AxisY * STEP).x;
+	float C = Function(Position + AxisZ * STEP).x
+		- Function(Position - AxisZ * STEP).x;
 	return normalize(float3 (A, B, C));
 }
 
@@ -163,18 +240,34 @@ float4 RayMarching(Ray ray)
 {
 	float4 result = (float4)0;
 	float start, final;
-	float t;
+	float2 t;
 	
 	if (IntersectBox(ray, BoxMinimum, BoxMaximum, start, final))
 	{
 		if (RayMarchingInsideCube(ray, start, final, t))
 		{
-			float3 Position = ray.o + ray.d * t;
+			float3 Position = ray.o + ray.d * t.x;
 			float3 normal = CalcNormal(Position);
+			
+            //return float4(normal, 1.0f);
 			
             float2 UV = CalcUV(Position, normal);
 			
-			float3 color = txTexture.SampleLevel(txSampler, 0.5f * UV, 0).rgb;
+            float3 color = (float3) 0;
+			
+            int matID = (int) (t.y + 0.5f);
+            if (matID == 1)
+            {
+                color = txTexture.SampleLevel(txSampler, 0.5f * UV, 0).rgb;
+            }
+            else if (matID == 2)
+            {
+                color = float3(0.8f, 0.9f, 1.0f);
+            }
+            else if (matID == 3)
+            {
+                color = float3(0.8f, 0.1f, 0.2f);
+            }
 
 			result = Shade(Position, normal, -ray.d, color);
 		}
