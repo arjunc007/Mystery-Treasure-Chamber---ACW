@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "ImGuiManager.h"
 #include "Material.h"
 #include "MeshObject.h"
 #include "ParticleSystem.h"
@@ -9,7 +10,10 @@
 using namespace Mystery_Treasure_Chamber;
 using namespace DirectX;
 
-bool Scene::Initialize(ID3D11Device* device)
+Scene::Scene() = default;
+Scene::~Scene() = default;
+
+bool Scene::Initialize(HWND hwnd, ID3D11Device* device, ID3D11DeviceContext* context)
 {
 	m_d3dDevice = device;
 
@@ -52,6 +56,9 @@ bool Scene::Initialize(ID3D11Device* device)
 	if (FAILED(device->CreateDepthStencilState(&depthDesc, m_depthWriteOffState.GetAddressOf()))) return false;
 
 	SetupSceneObjects();
+
+	m_uiManager = std::make_unique<ImGuiManager>();
+	m_uiManager->Initialize(hwnd, device, context);
 
 	return true;
 }
@@ -290,6 +297,9 @@ void Scene::Update(const DX::StepTimer& timer)
 {
 	TimeData.time = static_cast<float>(timer.GetTotalSeconds());
 	TimeData.deltaTime = static_cast<float>(timer.GetElapsedSeconds());
+
+	m_uiManager->BeginFrame();
+	BuildDebugUI();
 }
 
 void Scene::Render(ID3D11DeviceContext* context)
@@ -351,4 +361,45 @@ void Scene::Render(ID3D11DeviceContext* context)
 		m_sizeConstantBuffer.Get(),
 		m_psConstantBuffer.Get()
 	);
+
+	m_uiManager->Render();
+}
+
+void Scene::BuildDebugUI()
+{
+	// Create a floating window
+	ImGui::Begin("Mystery Chamber Controls");
+
+	ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+	ImGui::Separator();
+
+	if (ImGui::CollapsingHeader("Lighting & Environment", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::DragFloat3("Light 1 Position", &LightingData.lightPos[0].x, -3.0f, 1.0f, -2.5f);
+
+		// Edit light color
+		ImGui::ColorEdit3("Light Color", &LightingData.lightColor.x);
+	}
+
+	if (ImGui::CollapsingHeader("Tessellation (Floor)", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		/*ImGui::SliderFloat("Bump Height", &m_floorBumpHeight, 0.0f, 5.0f);
+		ImGui::Checkbox("View Dependent LOD", &m_isViewDependent);
+		ImGui::Checkbox("Wireframe Mode", &m_isWireframe);
+
+		const char* partitionModes[] = { "Integer", "Fractional Even", "Fractional Odd" };
+		ImGui::Combo("Partition Mode", &m_partitionMode, partitionModes, IM_ARRAYSIZE(partitionModes));*/
+	}
+
+	if (ImGui::CollapsingHeader("Raymarching Settings"))
+	{
+		// Toggle the procedural stone bumps on the pillars
+		/*bool bumpsEnabled = (m_enablePillarBump == 1);
+		if (ImGui::Checkbox("Enable Pillar Bumps", &bumpsEnabled))
+		{
+			m_enablePillarBump = bumpsEnabled ? 1 : 0;
+		}*/
+	}
+
+	ImGui::End();
 }

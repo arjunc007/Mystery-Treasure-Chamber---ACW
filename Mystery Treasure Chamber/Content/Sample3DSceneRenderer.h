@@ -4,8 +4,8 @@
 #include "ShaderStructures.h"
 #include "Common\StepTimer.h"
 
-class Scene;
 class MeshObject;
+class Scene;
 
 namespace Mystery_Treasure_Chamber
 {

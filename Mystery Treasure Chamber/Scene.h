@@ -11,13 +11,15 @@ namespace Mystery_Treasure_Chamber
 	class ParticleSystem;
 }
 
+class ImGuiManager;
+
 class Scene
 {
 public:
-	Scene() = default;
-	~Scene() = default;
+	Scene();
+	~Scene();
 
-	bool Initialize(ID3D11Device* device);
+	bool Initialize(HWND hwnd, ID3D11Device* device, ID3D11DeviceContext* context);
 	bool CreateRoomRenderTarget(ID3D11Device* device, UINT width, UINT height);
 
 	void AddMeshObject(std::shared_ptr<SceneObject> obj);
@@ -33,11 +35,13 @@ public:
 
 private:
 	void SetupSceneObjects();
+	void BuildDebugUI();
 
 	std::vector<std::shared_ptr<SceneObject>> m_backgroundObjects;
 	std::vector<std::shared_ptr<SceneObject>> m_meshObjects;
 	std::shared_ptr<SceneObject> m_floor;
 	std::shared_ptr<Mystery_Treasure_Chamber::ParticleSystem> m_fireSystem;
+	std::unique_ptr<ImGuiManager> m_uiManager;
 
 	Microsoft::WRL::ComPtr<ID3D11Device> m_d3dDevice;
 	Microsoft::WRL::ComPtr<ID3D11Buffer> m_mvpConstantBuffer;

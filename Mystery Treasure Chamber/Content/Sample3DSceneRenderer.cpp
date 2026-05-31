@@ -18,11 +18,9 @@ Sample3DSceneRenderer::Sample3DSceneRenderer(const std::shared_ptr<DX::DeviceRes
 	m_indexCount(0),
 	m_deviceResources(deviceResources)
 {
-	ID3D11Device* d3dDevice = m_deviceResources->GetD3DDevice();
-
 	m_scene = std::make_unique<Scene>();
 
-	m_scene->Initialize(d3dDevice);
+	m_scene->Initialize(m_deviceResources->GetWindowHandle(), m_deviceResources->GetD3DDevice(), m_deviceResources->GetD3DDeviceContext());
 
 	CreateDeviceDependentResources();
 	CreateWindowSizeDependentResources();

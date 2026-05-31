@@ -33,6 +33,8 @@ namespace DX
 		void Trim();
 		void Present();
 
+		HWND GetWindowHandle() const { return m_window; }
+
 		// The size of the render target, in pixels.
 		UINT GetOutputWidth() const { return m_outputWidth; }
 		UINT GetOutputHeight() const { return m_outputHeight; }
